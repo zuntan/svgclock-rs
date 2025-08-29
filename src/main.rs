@@ -737,6 +737,46 @@ fn draw<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a AppIn
 
 }
 
+fn make_zoom_menu(
+    win: &ApplicationWindow, 
+    da: &DrawingArea, 
+    app_info: &Rc< RefCell< AppInfo > >    
+) -> Menu
+{
+    let zooms: Vec<_> = (10..=200).step_by(10).collect();
+
+    let _zoom = app_info.borrow().zoom;
+
+    if zooms.iter().find( | &&x| { x == _zoom } ).is_none()
+    {
+        app_info.borrow_mut().zoom = 100;
+    }
+
+    let menu = Menu::new();
+
+    for x in zooms
+    {
+        let label = format!( "{}%", x );
+
+        let menu_item = CheckMenuItem::with_label( label.as_str() );           
+
+        menu_item.set_active( app_info.borrow().zoom == x );
+
+        let _da = da.clone();
+        let _app_info = app_info.clone();    
+        menu_item.connect_activate(
+            move |_| {
+                let mut _app_info = _app_info.borrow_mut();
+                _app_info.zoom = x;
+            }  
+        );
+
+        menu.append( &menu_item );
+    }
+
+    menu    
+}
+
 fn make_timezone_menu(
     da: &DrawingArea, 
     app_info: &Rc< RefCell< AppInfo > >    
@@ -983,7 +1023,7 @@ fn make_popup_menu(
 
     let menu_item_pref_time_zone = MenuItem::with_label( "Time Zone" );
     let menu_item_pref_theme = MenuItem::with_label( "Theme" );
-    let menu_item_pref_scale = MenuItem::with_label( "Window Scale" );
+    let menu_item_pref_zoom = MenuItem::with_label( "Zoom" );
 
     let menu_item_pref_save_pref = MenuItem::with_label( "Save Preference" );
 
@@ -998,15 +1038,17 @@ fn make_popup_menu(
     menu_pref.append( &SeparatorMenuItem::new() );
     menu_pref.append( &menu_item_pref_time_zone );
     menu_pref.append( &menu_item_pref_theme );
-    menu_pref.append( &menu_item_pref_scale );
+    menu_pref.append( &menu_item_pref_zoom );
     menu_pref.append( &SeparatorMenuItem::new() );
     menu_pref.append( &menu_item_pref_save_pref );    
 
     menu_item_pref.set_submenu( Some( &menu_pref ) );
 
     let menu_pref_time_zone = make_timezone_menu( &da.clone(), &app_info.clone() );
-
     menu_item_pref_time_zone.set_submenu( Some( &menu_pref_time_zone ) );
+
+    let menu_pref_zoom = make_zoom_menu( &win.clone(), &da.clone(), &app_info.clone() );
+    menu_item_pref_zoom.set_submenu( Some( &menu_pref_zoom ) );
 
     let menu_item_about = MenuItem::with_label( "About" );
 
