@@ -38,8 +38,7 @@ use gtk::gdk_pixbuf::Pixbuf;
 
 use rsvg::SvgHandle;
 
-use chrono::{ DateTime, Local };
-use chrono::{ Timelike, Utc };
+use chrono::{ DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike };
 
 use linked_hash_map::LinkedHashMap;
 
@@ -729,7 +728,8 @@ struct AppInfo
     always_on_top: bool
 ,   lock_pos: bool
 ,   show_seconds: bool
-,   enable_sub_seconds: bool
+,   enable_sub_second_hand: bool
+,   enable_second_hand_smoothly: bool
 ,   show_date: bool
 ,   time_zone: String
 ,   theme: AppInfoTheme
@@ -738,6 +738,9 @@ struct AppInfo
 ,   #[serde(skip)] 
     zoom_update: bool
 ,   window_pos: Option< ( i32, i32 ) >
+,   #[serde(skip)] 
+    time_disp: NaiveTime
+
 }
 
 impl AppInfo 
@@ -748,7 +751,8 @@ impl AppInfo
             always_on_top: true
         ,   lock_pos: false
         ,   show_seconds: true
-        ,   enable_sub_seconds: false
+        ,   enable_sub_second_hand: false
+        ,   enable_second_hand_smoothly: true
         ,   show_date: false
         ,   time_zone: String::new()
         ,   theme: AppInfoTheme::Theme1
@@ -756,11 +760,12 @@ impl AppInfo
         ,   zoom: 100
         ,   zoom_update: true
         ,   window_pos: None
+        ,   time_disp: NaiveTime::from_hms_opt(0, 0, 0 ).unwrap()
         }
     }
 }
 
-fn draw<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a AppInfo )
+fn draw_watch<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a mut AppInfo )
 {
     let zoom_factor = app_info.zoom as f64 / 100.0;
 
@@ -796,18 +801,62 @@ fn draw<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a AppIn
         let _ = cctx.restore();
     };
 
-    let local_datetime: DateTime<Local> = Local::now();
+    let time_now = Local::now();
 
-    let secs
-        = ( local_datetime.hour() * 60 * 60
-        + local_datetime.minute() * 60
-        + local_datetime.second()
-        ) as f64
-        ;
+    let time_now_naive = 
+        if app_info.time_zone == ""
+        {
+            time_now.naive_local().time()
+        }
+        else
+        {
+            let mut time_zone = app_info.time_zone.clone();
 
-    let angle_hour = secs / ( 12.0 * 60.0 * 60.0 ) * 360.0;
-    let angle_min = secs / ( 60.0 * 60.0 ) * 360.0;
-    let angle_sec = local_datetime.second() as f64 / 60.0 * 360.0;
+            if time_zone.starts_with( "GMT" ) || time_zone.starts_with( "UTC" )
+            {
+                time_zone = format!( "Etc/{}", time_zone );
+            }
+
+            let tz: Result< chrono_tz::Tz, _> = time_zone.parse();
+            
+            match tz
+            {
+                Ok( x ) =>
+                {
+                    time_now.with_timezone( &x ).naive_local().time()
+                }
+            ,    _ => 
+                {
+                    time_now.naive_local().time() 
+                }
+            }
+       }
+       ;
+
+    // let ( diff:u32, sign: i32 ) = 
+    let time_delta = ( time_now_naive - app_info.time_disp ).num_seconds();
+    if time_delta.abs() <= 60
+    {
+        app_info.time_disp = time_now_naive;
+    }
+    else 
+    {
+        let add = 
+            if time_delta.abs() < 800        { 30 }
+            else if time_delta.abs() < 2400  { 90 }
+            else if time_delta.abs() < 4800  { 180 }
+            else                             { 360 }
+            ;
+        app_info.time_disp += TimeDelta::seconds( time_delta.signum() * add );
+    }
+
+    let time_secs = app_info.time_disp.hour12().1 * 60 * 60 + app_info.time_disp.minute() * 60 + app_info.time_disp.second();
+
+    let angle_hour = time_secs as f64 / ( 12.0 * 60.0 * 60.0 ) * 360.0;
+    let angle_min = time_secs as f64 / ( 60.0 * 60.0 ) * 360.0;
+
+    let angle_sec_delta = if app_info.enable_second_hand_smoothly { time_now.timestamp_subsec_millis() as f64 / 1000.0 } else { 0.0 };
+    let angle_sec = ( time_now.second() as f64 + angle_sec_delta ) / 60.0 * 360.0;
 
     if let Some( x ) = image_info.svgh_long_handle.as_ref()
     {
@@ -932,29 +981,20 @@ fn make_timezone_menu(
     for x in chrono_tz::TZ_VARIANTS
     {
         let n = x.name();
-        let p:Vec<_> = n.split( "/" ).collect();
+        let p = n.split_once( "/" );
         
-        if p.len() <= 2
+        if let Some( ( area, city)  ) = p
         {
-            let area = p[0];
-
             if ! dic.contains_key( area )
             {
                 dic.insert( area, Vec::<_>::new() );
             }
 
-            let mut x = Vec::<_>::new();
-            x.push( "" );
-
-            if p.len() == 2
+            if let Some( vec ) = dic.get_mut( area )
             {
-                if let Some( vec ) = dic.get_mut( area )
+                if !( city.starts_with( "GMT" ) || city.starts_with( "UTC" ) || city.starts_with( "UCT" ) )
                 {
-                    let city = p[1];
-                    if ! ( city.starts_with( "GMT" ) || city.starts_with( "UTC" ) || city.starts_with( "UCT" ) )
-                    {
-                        vec.push( city );
-                    }
+                    vec.push( city );
                 }
             }
         }
@@ -1136,17 +1176,32 @@ fn make_popup_menu(
         }
     );
     
-    let menu_item_pref_enable_sub_seconds = gtk::CheckMenuItem::with_label( "Enable Sub Seconds" );
+    let menu_item_pref_enable_sub_second_hand = gtk::CheckMenuItem::with_label( "Enable sub second hand" );
 
-    menu_item_pref_enable_sub_seconds.set_active( app_info.borrow().enable_sub_seconds );
+    menu_item_pref_enable_sub_second_hand.set_active( app_info.borrow().enable_sub_second_hand );
     
     let _da = da.clone();
     let _app_info = app_info.clone();
 
-    menu_item_pref_enable_sub_seconds.connect_activate( move |_| 
+    menu_item_pref_enable_sub_second_hand.connect_activate( move |_| 
         {
             let mut _app_info = _app_info.borrow_mut();
-            _app_info.enable_sub_seconds = !_app_info.enable_sub_seconds;
+            _app_info.enable_sub_second_hand = !_app_info.enable_sub_second_hand;
+            _da.queue_draw();
+        }
+    );
+
+    let menu_item_pref_enable_second_hand_smoothly  = gtk::CheckMenuItem::with_label( "Enable second hand smoothly" );
+
+    menu_item_pref_enable_second_hand_smoothly .set_active( app_info.borrow().enable_second_hand_smoothly );
+    
+    let _da = da.clone();
+    let _app_info = app_info.clone();
+
+    menu_item_pref_enable_second_hand_smoothly .connect_activate( move |_| 
+        {
+            let mut _app_info = _app_info.borrow_mut();
+            _app_info.enable_second_hand_smoothly  = !_app_info.enable_second_hand_smoothly ;
             _da.queue_draw();
         }
     );
@@ -1176,7 +1231,8 @@ fn make_popup_menu(
     menu_pref.append( &menu_item_pref_lock_pos );
     menu_pref.append( &SeparatorMenuItem::new() );
     menu_pref.append( &menu_item_pref_show_seconds );
-    menu_pref.append( &menu_item_pref_enable_sub_seconds );
+    menu_pref.append( &menu_item_pref_enable_sub_second_hand );
+    menu_pref.append( &menu_item_pref_enable_second_hand_smoothly );
     menu_pref.append( &menu_item_pref_show_date );
     menu_pref.append( &SeparatorMenuItem::new() );
     menu_pref.append( &menu_item_pref_time_zone );
@@ -1335,7 +1391,7 @@ fn main() {
         da.connect_draw( move | _, cr | 
             {
                 update_region( &_window, &_image_info.borrow(), &mut __app_info.borrow_mut() );
-                draw( cr, &_image_info.borrow(), &__app_info.borrow() );
+                draw_watch( cr, &_image_info.borrow(), &mut __app_info.borrow_mut() );
                 gtk::glib::Propagation::Proceed
             }
         );
@@ -1394,7 +1450,7 @@ fn main() {
 
         window.show_all();
 
-        gtk::glib::source::timeout_add_local(std::time::Duration::from_millis(100), move || 
+        gtk::glib::source::timeout_add_local(std::time::Duration::from_millis(75), move || 
             {
                 /* log::debug!("timeout" );         */
                 da.queue_draw();
