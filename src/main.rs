@@ -1,9 +1,7 @@
 extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
-use log::{Level, log_enabled};
-use rsvg::SvgHandle;
-use strum::{IntoEnumIterator, VariantArray, VariantNames};
+
 
 /* use std::sync::{Arc, Mutex}; */
 
@@ -12,10 +10,16 @@ use std::io::prelude::*;
 use std::str::FromStr;
 use std::{io::Cursor, str};
 use std::convert::AsRef;
-use std::path::Path;
+
 use std::rc::Rc;
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::sync::LazyLock;
+use std::f64::consts::PI;
+
+use log::{Level, log_enabled};
+use strum::{IntoEnumIterator, VariantArray, VariantNames};
+
+use serde::{Deserialize, Serialize};
 
 use glam::{DAffine2, DMat2, DVec2, IVec2};
 use quick_xml::events::BytesStart;
@@ -23,7 +27,7 @@ use regex::Regex;
 
 use gtk::{ prelude::* };
 use gtk::{ Application, ApplicationWindow, DrawingArea };
-use gtk::{ Menu, MenuItem, CheckMenuItem, RadioMenuItem, SeparatorMenuItem };
+use gtk::{ Menu, MenuItem, CheckMenuItem,  SeparatorMenuItem };
 use gtk::{ Dialog, DialogFlags, ResponseType, AboutDialog };
 
 use gtk::cairo::{ Context, Rectangle, ImageSurface, Format, Region };
@@ -32,7 +36,7 @@ use gtk::cairo::{ FontSlant, FontWeight  };
 use gtk::gdk::prelude::GdkSurfaceExt;
 use gtk::gdk_pixbuf::Pixbuf;
 
-use std::f64::consts::PI;
+use rsvg::SvgHandle;
 
 use chrono::{ DateTime, Local };
 use chrono::{ Timelike, Utc };
@@ -710,7 +714,7 @@ fn update_region<'a>( window: &'a ApplicationWindow, image_info: &'a ImageInfo, 
     }
 }
 
-#[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone )]
+#[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
 enum AppInfoTheme
 {
     Theme1
@@ -719,6 +723,7 @@ enum AppInfoTheme
 ,   Custom
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 struct AppInfo
 {
     always_on_top: bool
@@ -729,8 +734,10 @@ struct AppInfo
 ,   time_zone: String
 ,   theme: AppInfoTheme
 ,   theme_custome: Option< String >
-,   zoom: u32
-,   zoom_update: bool
+,   zoom: u32   
+,   #[serde(skip)] 
+    zoom_update: bool
+,   window_pos: Option< ( i32, i32 ) >
 }
 
 impl AppInfo 
@@ -748,6 +755,7 @@ impl AppInfo
         ,   theme_custome: None
         ,   zoom: 100
         ,   zoom_update: true
+        ,   window_pos: None
         }
     }
 }
@@ -1217,10 +1225,12 @@ fn make_popup_menu(
     let menu_item_quit = MenuItem::with_label( "Quit");
 
     let _app = app.clone();
+    let _win = win.clone();
 
     menu_item_quit.connect_activate(
         move |_| {
-            _app.quit();
+            //_app.quit();
+            _win.close();
         }
     );
 
@@ -1235,17 +1245,68 @@ fn make_popup_menu(
 fn main() {
     pretty_env_logger::init();
 
+    let app_info_file = ".hello_gtk";
+
     let app = Application::builder()
         .application_id("net.zuntan.example")
         .build();
 
-    let __app_info = Rc::new( RefCell::new( AppInfo::new() ) );
+    let app_info = Rc::new( RefCell::new( AppInfo::new() ) );
 
-    let _app_info = __app_info.clone();
+    {
+        let file = File::open(app_info_file );
+
+        match file
+        {
+            Ok( mut file ) =>
+            {
+                let mut buf = String::new();
+
+                match file.read_to_string( &mut buf )
+                {
+                    Ok(_) =>
+                    {
+                        let app_info_load : Result< AppInfo, _> = toml::from_str( &buf );
+
+                        match app_info_load
+                        {
+                            Ok( app_info_load ) =>
+                            {
+                                app_info.replace( app_info_load );
+                            }
+                        ,   Err( err ) =>
+                            {
+                                error!( "{}", err );
+                            }
+                        }
+                    }
+                ,   Err( err ) =>
+                    {
+                        error!( "{}", err );
+                    }
+                }
+            }
+        ,   Err( err ) =>
+            {
+                match err.kind() 
+                {
+                    std::io::ErrorKind::NotFound => { /* pass */ }
+                ,   _ =>
+                    {
+                        error!( "{}", err );
+                    }
+                }
+            }
+        }
+    }
+
+    app_info.borrow_mut().zoom_update = true;
+
+    let _app_info = app_info.clone();
 
     app.connect_activate(move |app| {
 
-        let image_info = Rc::new( RefCell::new( load_theme( AppInfoTheme::Theme1, None ).unwrap() ) );
+        let image_info = Rc::new( RefCell::new( load_theme( _app_info.borrow().theme, _app_info.borrow().theme_custome.clone()  ).unwrap() ) );
 
         let window = ApplicationWindow::builder()
             .application(app)
@@ -1259,6 +1320,11 @@ fn main() {
             .build();
 
         window.set_keep_above( _app_info.borrow().always_on_top );
+
+        if let Some( pos ) = _app_info.borrow().window_pos
+        {
+            window.move_( pos.0, pos.1 );
+        }
 
         let da =  DrawingArea::new();
 
@@ -1292,7 +1358,7 @@ fn main() {
                 {
                     1 => /* left button */
                     {
-                        if !_app_info.borrow().lock_pos
+                        if !__app_info.borrow().lock_pos
                         {
                             let btn = evt.as_ref();
                             window.begin_move_drag( btn.button as i32, btn.x_root as i32, btn.y_root as i32, btn.time );
@@ -1314,6 +1380,18 @@ fn main() {
             }
         );
 
+        let __app_info = _app_info.clone();
+
+        window.connect_delete_event( 
+            move | win, _ |
+            {
+                log::debug!("connect_delete_event" );
+                log::debug!("pos:{:?}", win.position() );
+                __app_info.borrow_mut().window_pos = Some( win.position() );
+                gtk::glib::Propagation::Proceed
+            }
+        );
+
         window.show_all();
 
         gtk::glib::source::timeout_add_local(std::time::Duration::from_millis(100), move || 
@@ -1324,6 +1402,39 @@ fn main() {
             }
         );
     });
+
+    let _app_info = app_info.clone();
+
+    app.connect_shutdown(
+        move | _ |
+        {
+            debug!("connect_shutdown");
+
+            let toml_str = toml::to_string( _app_info.as_ref() ).unwrap();
+            let toml_str = format!( "#TOML\n\n{}", toml_str );
+
+            let file = File::create(app_info_file );
+
+            match file
+            {
+                Ok( mut file ) =>
+                {
+                    match file.write( toml_str.as_bytes() )
+                    {
+                        Ok(_) => {}
+                    ,   Err(err) =>
+                        {
+                            error!( "{}", err );
+                        }
+                    }
+                },
+                Err( err ) =>
+                {
+                    error!( "{}", err );
+                }
+            }
+        }
+    );
 
     app.run();
 }
