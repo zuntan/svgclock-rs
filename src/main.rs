@@ -1239,9 +1239,11 @@ fn main() {
         .application_id("net.zuntan.example")
         .build();
 
-    app.connect_activate(move |app| {
+    let __app_info = Rc::new( RefCell::new( AppInfo::new() ) );
 
-        let app_info = Rc::new( RefCell::new( AppInfo::new() ) );
+    let _app_info = __app_info.clone();
+
+    app.connect_activate(move |app| {
 
         let image_info = Rc::new( RefCell::new( load_theme( AppInfoTheme::Theme1, None ).unwrap() ) );
 
@@ -1256,19 +1258,18 @@ fn main() {
 */
             .build();
 
-        window.set_keep_above( app_info.borrow().always_on_top );
-
+        window.set_keep_above( _app_info.borrow().always_on_top );
 
         let da =  DrawingArea::new();
 
         let _window = window.clone();
         let _image_info = image_info.clone();
-        let _app_info = app_info.clone();
+        let __app_info = _app_info.clone();
 
         da.connect_draw( move | _, cr | 
             {
-                update_region( &_window, &_image_info.borrow(), &mut _app_info.borrow_mut() );
-                draw( cr, &_image_info.borrow(), &_app_info.borrow() );
+                update_region( &_window, &_image_info.borrow(), &mut __app_info.borrow_mut() );
+                draw( cr, &_image_info.borrow(), &__app_info.borrow() );
                 gtk::glib::Propagation::Proceed
             }
         );
@@ -1279,7 +1280,7 @@ fn main() {
         let _window = window.clone();
         let _da = da.clone();
         let _image_info = image_info.clone();
-        let _app_info = app_info.clone();
+        let __app_info = _app_info.clone();
 
         window.connect_button_press_event( move | window,  evt | 
             {
@@ -1299,7 +1300,7 @@ fn main() {
                     }
                 ,   3 => /* right button */
                     {
-                        let menu = make_popup_menu( &_app, &_window,&_da, &_app_info, &_image_info, logo );
+                        let menu = make_popup_menu( &_app, &_window,&_da, &__app_info, &_image_info, logo );
 
                         menu.show_all();
                         menu.popup_at_pointer( Some( evt ) );
