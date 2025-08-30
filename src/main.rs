@@ -3,6 +3,7 @@ extern crate pretty_env_logger;
 extern crate log;
 use log::{Level, log_enabled};
 use rsvg::SvgHandle;
+use strum::{IntoEnumIterator, VariantArray, VariantNames};
 
 /* use std::sync::{Arc, Mutex}; */
 
@@ -13,13 +14,12 @@ use std::{io::Cursor, str};
 use std::convert::AsRef;
 use std::path::Path;
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
+use std::sync::LazyLock;
 
 use glam::{DAffine2, DMat2, DVec2, IVec2};
 use quick_xml::events::BytesStart;
 use regex::Regex;
-
-use once_cell::sync::Lazy;
 
 use gtk::{ prelude::* };
 use gtk::{ Application, ApplicationWindow, DrawingArea };
@@ -40,9 +40,13 @@ use chrono::{ Timelike, Utc };
 use linked_hash_map::LinkedHashMap;
 
 fn parse_float_list(val: &str) -> Vec<f64> {
-    static RE_FLOAT: Lazy<Regex> = Lazy::new(|| {
-        Regex::new(r"[-+]?([0-9]*\.[0-9]+|[0-9]+\.?[0-9]*)([eE][-+]?[0-9]+)?").unwrap()
-    });
+    
+    static RE_FLOAT: LazyLock<Regex> = LazyLock::new(
+        || 
+        {
+            Regex::new(r"[-+]?([0-9]*\.[0-9]+|[0-9]+\.?[0-9]*)([eE][-+]?[0-9]+)?").unwrap()
+        }
+    );
 
     let arg: Vec<f64> = RE_FLOAT
         .captures_iter(val)
@@ -55,9 +59,13 @@ fn parse_float_list(val: &str) -> Vec<f64> {
 }
 
 fn parse_svg_transform_value(transform: &str) -> Option<DAffine2> {
-    static RE_TRANSLATE: Lazy<Regex> = Lazy::new(|| {
-        Regex::new(r"(?i)(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^\)]+)\)").unwrap()
-    });
+    
+    static RE_TRANSLATE: LazyLock< Regex > = LazyLock::new(
+        || 
+        {
+            Regex::new(r"(?i)(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^\)]+)\)").unwrap()
+        }
+    );
 
     if String::from(transform).trim() == "" {
         None
@@ -429,8 +437,6 @@ struct ImageInfo {
     svgh_center_circle: Option<SvgHandle>,
 
     center: DVec2,
-    region: Option<Region>,
-    logo: Option<Pixbuf>
 }
 
 impl ImageInfo {
@@ -453,19 +459,76 @@ impl ImageInfo {
             svgh_center_circle: None,
 
             center: DVec2::ZERO,
-            region: None,
-            logo: None
         }
     }
 }
 
-fn load_xml() -> ImageInfo {
-    let mut src_buf = Vec::<u8>::new();
-    {
-        let mut src = File::open("clock_impl.svg").unwrap();
-        src.read_to_end(&mut src_buf).unwrap();
-    }
+fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< ImageInfo >
+{
+    let src_buf: Option< Vec<u8> > = 
+        match theme
+        {
+            AppInfoTheme::Theme1 => 
+            {
+                let mut src_buf = Vec::<u8>::new();
+                let mut src = File::open("clock_theme_1.svg").unwrap();
+                src.read_to_end( &mut src_buf ).unwrap();
 
+                Some( src_buf )
+            }
+
+            AppInfoTheme::Theme2 => 
+            {
+                let mut src_buf = Vec::<u8>::new();
+                let mut src = File::open("clock_theme_2.svg").unwrap();
+                src.read_to_end( &mut src_buf ).unwrap();
+
+                Some( src_buf )
+            }
+
+            AppInfoTheme::Theme3 => 
+            {
+                let mut src_buf = Vec::<u8>::new();
+                let mut src = File::open("clock_theme_3.svg").unwrap();
+                src.read_to_end( &mut src_buf ).unwrap();
+
+                Some( src_buf )
+            }
+
+            AppInfoTheme::Custom =>
+            {
+                if let Some( theme_custom ) = theme_custom
+                {
+                    let mut src_buf = Vec::<u8>::new();
+                    let src = File::open(theme_custom );
+
+                    if let Ok( mut src ) = src
+                    {
+                        if let Ok(_) = src.read_to_end( &mut src_buf )
+                        {
+                            Some( src_buf )
+                        }
+                        else { None }
+                    }
+                    else { None }
+                }
+                else { None }
+            }
+        }
+        ;
+    
+    if let Some( src_buf ) = src_buf
+    {
+        Some( load_xml( &src_buf) )
+    }
+    else 
+    {
+        None
+    }
+}
+
+fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo 
+{
     let src_base = filter_xml(
         &mut FilterInputReader::from_reader(&src_buf),
         FilterTarget::Base,
@@ -487,15 +550,6 @@ fn load_xml() -> ImageInfo {
         FilterTarget::CenterCircle,
     );
 
-    let fn_make_dumpfile = | src_xml : &Vec<u8>, path : &Path | 
-    {
-        if log_enabled!(Level::Debug) 
-        {
-            let mut dest = File::create( path ).unwrap();
-            dest.write_all(src_xml).unwrap();
-        }
-    };
-
     let fn_make_svg_handle = | src_xml : &Vec<u8> | 
     {
         let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( src_xml ));
@@ -514,8 +568,6 @@ fn load_xml() -> ImageInfo {
     let mut ret = ImageInfo::new();
 
     if let Ok(src_xml) = src_base {
-        fn_make_dumpfile( &src_xml, &Path::new( "clock_impl_base.svg" ) );
-
         if let Ok(result) = parse_xml_sz_and_vbox(&mut FilterInputReader::from_reader(&src_xml)) {
             ret.sz = result.0;
             ret.viewbox_xy = result.1;
@@ -527,25 +579,21 @@ fn load_xml() -> ImageInfo {
     }
 
     if let Ok(src_xml) = src_long_handle {
-        fn_make_dumpfile( &src_xml, &Path::new( "clock_impl_long_handle.svg" ) );
         ret.svgh_long_handle = fn_make_svg_handle( &src_xml );
         ret.bytes_long_handle = Some(src_xml);
     }
 
     if let Ok(src_xml) = src_short_handle {
-        fn_make_dumpfile( &src_xml, &Path::new( "clock_impl_short_handlee.svg" ) );
         ret.svgh_short_handle = fn_make_svg_handle( &src_xml );
         ret.bytes_short_handle = Some(src_xml);
     }
 
     if let Ok(src_xml) = src_second_handle {
-        fn_make_dumpfile( &src_xml, &Path::new( "clock_impl_second_handle.svg" ) );
         ret.svgh_second_handle = fn_make_svg_handle( &src_xml );
         ret.bytes_second_handle = Some(src_xml);
     }
 
     if let Ok(src_xml) = src_center_circle {
-        fn_make_dumpfile( &src_xml, &Path::new( "clock_impl_center_circle.svg" ) );
 
         if let Ok(center) = parse_xml_center(&mut FilterInputReader::from_reader(&src_xml)) {
             ret.center = center;
@@ -557,11 +605,55 @@ fn load_xml() -> ImageInfo {
         ret.bytes_center_circle = Some(src_xml);
     }
 
-    // after setup
+    ret
+}
 
-    if let Some(src_xml) = ret.bytes_base.as_ref()
-        && ret.sz.x > 0
-        && ret.sz.y > 0
+fn load_logo() -> Option< Pixbuf >
+{
+    // load logo
+    let mut src_buf = Vec::<u8>::new();
+    
+    let mut src = File::open("logo.svg").unwrap();
+    src.read_to_end(&mut src_buf).unwrap();
+
+    if let Ok(result) = parse_xml_sz_and_vbox(&mut FilterInputReader::from_reader(&src_buf)) {
+
+        let sz = result.0;
+        let surface = ImageSurface::create(Format::ARgb32, sz.x, sz.y ).unwrap();
+        
+        {
+            let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &src_buf ));
+
+            let svg_handle = 
+                rsvg::Loader::new()
+                .read_stream(
+                    &svg_stream,
+                    None::<&gtk::gio::File>,
+                    None::<&gtk::gio::Cancellable>,
+                )
+                .unwrap()
+                ;
+
+            let cctx = Context::new( &surface ).unwrap();
+            let viewport = Rectangle::new(0.0, 0.0, sz.x as f64, sz.y as f64);
+
+            let svg_renderer = rsvg::CairoRenderer::new( &svg_handle );
+            svg_renderer.render_document( &cctx, &viewport ).unwrap();
+        }
+
+        return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
+    }
+
+    None
+}
+
+fn make_region( image_info: &ImageInfo, sz: DVec2 ) -> Option< Region >
+{
+    if let Some(src_xml) = image_info.bytes_base.as_ref()
+        && image_info.sz.x > 0
+        && image_info.sz.y > 0
+        && sz.x > 0.0
+        && sz.y > 0.0
     {
         let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(src_xml));
         let svg_handle = rsvg::Loader::new()
@@ -573,11 +665,11 @@ fn load_xml() -> ImageInfo {
             .unwrap();
         let svg_renderer = rsvg::CairoRenderer::new(&svg_handle);
 
-        let surface_mask = ImageSurface::create(Format::A8, ret.sz.x, ret.sz.y).unwrap();
+        let surface_mask = ImageSurface::create(Format::A8, sz.x as i32, sz.y as i32 ).unwrap();
 
         let cctx = Context::new(&surface_mask).unwrap();
 
-        let viewport = Rectangle::new(0.0, 0.0, ret.sz.x as f64, ret.sz.y as f64);
+        let viewport = Rectangle::new(0.0, 0.0, sz.x, sz.y );
 
         debug!("viewport:{:?}", viewport);
 
@@ -587,56 +679,44 @@ fn load_xml() -> ImageInfo {
 
         surface_mask.write_to_png(&mut mask_file).unwrap();
 
-        ret.region = surface_mask.create_region();
+        surface_mask.create_region()
     }
-
-    // load logo
-    let mut src_buf = Vec::<u8>::new();
+    else 
     {
-        let mut src = File::open("logo.svg").unwrap();
-        src.read_to_end(&mut src_buf).unwrap();
-
-        if let Ok(result) = parse_xml_sz_and_vbox(&mut FilterInputReader::from_reader(&src_buf)) {
-
-            let sz = result.0;
-            /*
-            let viewbox_xy = result.1;
-            let viewbox_sz = result.2;
-            */
-
-            let surface = ImageSurface::create(Format::ARgb32, sz.x, sz.y ).unwrap();
-            
-            {
-                let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &src_buf ));
-
-                let svg_handle = 
-                    rsvg::Loader::new()
-                    .read_stream(
-                        &svg_stream,
-                        None::<&gtk::gio::File>,
-                        None::<&gtk::gio::Cancellable>,
-                    )
-                    .unwrap()
-                    ;
-
-                let cctx = Context::new( &surface ).unwrap();
-                let viewport = Rectangle::new(0.0, 0.0, sz.x as f64, sz.y as f64);
-
-                let svg_renderer = rsvg::CairoRenderer::new( &svg_handle );
-                svg_renderer.render_document( &cctx, &viewport ).unwrap();
-            }
-
-            ret.logo = gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
-        }
+        None
     }
-
-    ret
 }
 
+fn update_region<'a>( window: &'a ApplicationWindow, image_info: &'a ImageInfo, app_info: &'a mut AppInfo ) 
+{
+    if app_info.zoom_update
+    {
+        if  image_info.sz.x > 0
+        &&  image_info.sz.y > 0
+        &&  app_info.zoom > 0
+        {
+            let zoom_factor = app_info.zoom as f64 / 100.0;
+
+            let sz = DVec2::new( 
+                image_info.sz.x as f64 * zoom_factor
+            ,   image_info.sz.y as f64 * zoom_factor
+            );
+
+            window.resize( sz.x as i32, sz.y as i32 );
+            window.shape_combine_region( make_region( &image_info, sz ).as_ref() );
+
+            app_info.zoom_update = false;
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone )]
 enum AppInfoTheme
 {
-    T1
-,   CUSTOME
+    Theme1
+,   Theme2
+,   Theme3    
+,   Custom
 }
 
 struct AppInfo
@@ -650,6 +730,7 @@ struct AppInfo
 ,   theme: AppInfoTheme
 ,   theme_custome: Option< String >
 ,   zoom: u32
+,   zoom_update: bool
 }
 
 impl AppInfo 
@@ -663,20 +744,28 @@ impl AppInfo
         ,   enable_sub_seconds: false
         ,   show_date: false
         ,   time_zone: String::new()
-        ,   theme: AppInfoTheme::T1
+        ,   theme: AppInfoTheme::Theme1
         ,   theme_custome: None
         ,   zoom: 100
+        ,   zoom_update: true
         }
     }
 }
 
 fn draw<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a AppInfo )
 {
-    let viewport = Rectangle::new(0.0, 0.0, image_info.sz.x as f64, image_info.sz.y as f64);
+    let zoom_factor = app_info.zoom as f64 / 100.0;
+
+    let sz = DVec2::new( 
+        image_info.sz.x as f64 * zoom_factor
+    ,   image_info.sz.y as f64 * zoom_factor
+    );
+
+    let viewport = Rectangle::new(0.0, 0.0, sz.x, sz.y );
     let center = DVec2
     {
-        x: image_info.sz.x as f64 * ( image_info.center.x / image_info.viewbox_sz.x )
-    ,   y: image_info.sz.y as f64 * ( image_info.center.y / image_info.viewbox_sz.y )
+        x: sz.x * ( image_info.center.x / image_info.viewbox_sz.x )
+    ,   y: sz.y * ( image_info.center.y / image_info.viewbox_sz.y )
     };
 
     if let Some( x ) = image_info.svgh_base.as_ref()
@@ -737,24 +826,69 @@ fn draw<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a AppIn
 
 }
 
-fn make_zoom_menu(
+fn make_theme_menu(
     win: &ApplicationWindow, 
+    da: &DrawingArea, 
+    image_info: &Rc< RefCell< ImageInfo > >,
+    app_info: &Rc< RefCell< AppInfo > >    
+) -> Menu
+{
+    let menu = Menu::new();
+
+    for ait in AppInfoTheme::iter()
+    {
+        let menu_item = CheckMenuItem::with_label( ait.to_string().as_str() );          
+
+        menu_item.set_active( ait == app_info.borrow().theme );
+
+        let _da = da.clone();
+        let _app_info = app_info.clone();    
+        let _image_info = image_info.clone();
+
+        menu_item.connect_activate(
+            move |_| 
+            {
+                let mut _app_info = _app_info.borrow_mut();
+                _app_info.theme = ait;
+                _app_info.zoom = 100;
+                _app_info.zoom_update = true;
+                _image_info.replace( load_theme( _app_info.theme, _app_info.theme_custome.clone() ).unwrap() );
+            }  
+        );
+
+        if ait == AppInfoTheme::Custom
+        {
+            menu_item.set_sensitive( app_info.borrow().theme_custome.is_some() );
+        }
+
+        menu.append( &menu_item );        
+    }
+
+    menu      
+}
+
+fn make_zoom_menu(
     da: &DrawingArea, 
     app_info: &Rc< RefCell< AppInfo > >    
 ) -> Menu
 {
-    let zooms: Vec<_> = (10..=200).step_by(10).collect();
+    static ZOOMS: LazyLock< Vec<u32> > = LazyLock::new( 
+        || 
+        {
+            (30..=230).step_by(10).collect()
+        }
+    );
 
     let _zoom = app_info.borrow().zoom;
 
-    if zooms.iter().find( | &&x| { x == _zoom } ).is_none()
+    if ZOOMS.iter().find( | &&x| { x == _zoom } ).is_none()
     {
         app_info.borrow_mut().zoom = 100;
     }
 
     let menu = Menu::new();
 
-    for x in zooms
+    for &x in ZOOMS.iter()
     {
         let label = format!( "{}%", x );
 
@@ -768,6 +902,7 @@ fn make_zoom_menu(
             move |_| {
                 let mut _app_info = _app_info.borrow_mut();
                 _app_info.zoom = x;
+                _app_info.zoom_update = true;
             }  
         );
 
@@ -825,6 +960,7 @@ fn make_timezone_menu(
     let tz = if tz == "" { String::from( "<< (Local Time) >>" ) } else { format!("<< {} >>", tz) };
 
     let menu_item_now = MenuItem::with_label( tz.as_str() );
+    menu_item_now.set_sensitive( false );
 
     menu.append( &menu_item_now );
     menu.append( &SeparatorMenuItem::new() );
@@ -937,7 +1073,8 @@ fn make_popup_menu(
     win: &ApplicationWindow,
     da: &DrawingArea, 
     app_info: &Rc< RefCell< AppInfo > >,
-    image_info: &Rc< ImageInfo >
+    image_info: &Rc< RefCell< ImageInfo > >,
+    logo: Option<Pixbuf>
 ) -> Menu
 {
     let menu = Menu::new();
@@ -1025,8 +1162,6 @@ fn make_popup_menu(
     let menu_item_pref_theme = MenuItem::with_label( "Theme" );
     let menu_item_pref_zoom = MenuItem::with_label( "Zoom" );
 
-    let menu_item_pref_save_pref = MenuItem::with_label( "Save Preference" );
-
     let menu_pref = Menu::new();
 
     menu_pref.append( &menu_item_pref_alway_on_top );
@@ -1039,15 +1174,16 @@ fn make_popup_menu(
     menu_pref.append( &menu_item_pref_time_zone );
     menu_pref.append( &menu_item_pref_theme );
     menu_pref.append( &menu_item_pref_zoom );
-    menu_pref.append( &SeparatorMenuItem::new() );
-    menu_pref.append( &menu_item_pref_save_pref );    
 
     menu_item_pref.set_submenu( Some( &menu_pref ) );
 
     let menu_pref_time_zone = make_timezone_menu( &da.clone(), &app_info.clone() );
     menu_item_pref_time_zone.set_submenu( Some( &menu_pref_time_zone ) );
 
-    let menu_pref_zoom = make_zoom_menu( &win.clone(), &da.clone(), &app_info.clone() );
+    let menu_pref_theme = make_theme_menu( &win.clone(), &da.clone(), &image_info.clone(), &app_info.clone() );
+    menu_item_pref_theme.set_submenu( Some( &menu_pref_theme ) );
+
+    let menu_pref_zoom = make_zoom_menu( &da.clone(), &app_info.clone() );
     menu_item_pref_zoom.set_submenu( Some( &menu_pref_zoom ) );
 
     let menu_item_about = MenuItem::with_label( "About" );
@@ -1072,7 +1208,7 @@ fn make_popup_menu(
                 .build()
                 ;
             
-            about_dialog.set_logo( _image_info.logo.as_ref() );    
+            about_dialog.set_logo( logo.as_ref() );    
             about_dialog.set_parent( &_win );
             about_dialog.show_all();
         }
@@ -1099,7 +1235,6 @@ fn make_popup_menu(
 fn main() {
     pretty_env_logger::init();
 
-
     let app = Application::builder()
         .application_id("net.zuntan.example")
         .build();
@@ -1108,27 +1243,29 @@ fn main() {
 
         let app_info = Rc::new( RefCell::new( AppInfo::new() ) );
 
-        let image_info = Rc::new( load_xml() );
+        let image_info = Rc::new( RefCell::new( load_theme( AppInfoTheme::Theme1, None ).unwrap() ) );
 
         let window = ApplicationWindow::builder()
             .application(app)
             .title("net.zuntan.example")
             .decorated(false)
             .tooltip_markup("example")
+/* 
             .default_width(image_info.sz.x)
             .default_height(image_info.sz.y)
+*/
             .build();
 
-        window.shape_combine_region(image_info.region.as_ref());
-        
         let da =  DrawingArea::new();
 
+        let _window = window.clone();
         let _image_info = image_info.clone();
         let _app_info = app_info.clone();
 
         da.connect_draw( move | _, cr | 
             {
-                draw( cr, &_image_info, &_app_info.borrow() );
+                update_region( &_window, &_image_info.borrow(), &mut _app_info.borrow_mut() );
+                draw( cr, &_image_info.borrow(), &_app_info.borrow() );
                 gtk::glib::Propagation::Proceed
             }
         );
@@ -1138,12 +1275,15 @@ fn main() {
         let _app = app.clone();
         let _window = window.clone();
         let _da = da.clone();
+        let _image_info = image_info.clone();
         let _app_info = app_info.clone();
 
         window.connect_button_press_event( move | window,  evt | 
             {
                 log::debug!("pressed: {:?}", evt.button() );
-                
+
+                let logo = load_logo();
+
                 match evt.button()
                 {
                     1 => /* left button */
@@ -1156,7 +1296,7 @@ fn main() {
                     }
                 ,   3 => /* right button */
                     {
-                        let menu = make_popup_menu( &_app, &_window,&_da, &_app_info, &image_info );
+                        let menu = make_popup_menu( &_app, &_window,&_da, &_app_info, &_image_info, logo );
 
                         menu.show_all();
                         menu.popup_at_pointer( Some( evt ) );
