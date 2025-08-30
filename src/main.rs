@@ -738,7 +738,7 @@ impl AppInfo
     const fn new() -> Self {
         Self
         {
-            always_on_top: false
+            always_on_top: true
         ,   lock_pos: false
         ,   show_seconds: true
         ,   enable_sub_seconds: false
@@ -1255,6 +1255,9 @@ fn main() {
             .default_height(image_info.sz.y)
 */
             .build();
+
+        window.set_keep_above( app_info.borrow().always_on_top );
+
 
         let da =  DrawingArea::new();
 
