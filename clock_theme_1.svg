@@ -8,7 +8,7 @@
    version="1.1"
    id="svg5"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
-   sodipodi:docname="clock_impl.svg"
+   sodipodi:docname="clock_theme_1.svg"
    inkscape:export-filename="clock_base.svg"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
@@ -27,15 +27,15 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      showgrid="false"
-     inkscape:zoom="2.8284271"
-     inkscape:cx="116.31907"
-     inkscape:cy="107.48023"
-     inkscape:window-width="2494"
-     inkscape:window-height="1371"
-     inkscape:window-x="66"
-     inkscape:window-y="32"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="layer5"
+     inkscape:zoom="2"
+     inkscape:cx="-60.500001"
+     inkscape:cy="253.75"
+     inkscape:window-width="1965"
+     inkscape:window-height="1248"
+     inkscape:window-x="347"
+     inkscape:window-y="90"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer10"
      showguides="false" />
   <defs
      id="defs2" />
@@ -125,6 +125,79 @@
              y="50.122181">9</tspan></text>
       </g>
     </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer10"
+     inkscape:label="base_text"
+     style="display:inline">
+    <text
+       xml:space="preserve"
+       style="font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';display:inline;fill:#00ff00;stroke:none;stroke-width:0.529167;stroke-linecap:round"
+       x="22.052429"
+       y="16.203108"
+       id="text480-3"><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke:none;stroke-width:0.529167"
+         x="22.052429"
+         y="16.203108"
+         id="tspan572">{time_zone}</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#ffff00;stroke:none;stroke-width:0.529167;stroke-linecap:round"
+       x="50%"
+       y="55.151127"
+       id="text480-3-5-1"
+       text-anchor="middle"><tspan
+         sodipodi:role="line"
+         id="tspan2079"
+         x="50%"
+         y="55.151127"
+         style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:5.64444px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">{time_dig}</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';display:inline;fill:#ffff00;stroke:none;stroke-width:0.529167;stroke-linecap:round"
+       x="23.829185"
+       y="28.457558"
+       id="text480-3-5"><tspan
+         sodipodi:role="line"
+         style="fill:#ffff00;stroke:none;stroke-width:0.529167"
+         x="23.829185"
+         y="28.457558"
+         id="tspan572-3">{date}</tspan></text>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer6"
+     inkscape:label="sub_second_base">
+    <ellipse
+       style="display:inline;fill:#4d4d4d;stroke:#808080;stroke-width:0.529167;stroke-linecap:round;stroke-opacity:1"
+       id="path2213"
+       cx="33.866665"
+       cy="48.754803"
+       rx="8.1407614"
+       ry="7.7936025" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer7"
+     inkscape:label="sub_second_handle">
+    <path
+       style="fill:#00ff00;stroke:#ff0000;stroke-width:0.494572;stroke-linecap:round;stroke-dasharray:none"
+       d="m 33.883962,42.088253 -0.03459,7.442927"
+       id="path2587-0" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer8"
+     inkscape:label="sub_second_center_circle">
+    <ellipse
+       style="display:inline;fill:#ff0000;stroke:#999999;stroke-width:0.103065;stroke-dasharray:none"
+       id="path2162-6"
+       cx="33.866665"
+       cy="48.754803"
+       rx="0.47763428"
+       ry="0.47763425" />
   </g>
   <g
      inkscape:groupmode="layer"

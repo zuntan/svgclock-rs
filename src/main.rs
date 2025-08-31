@@ -16,8 +16,9 @@ use std::cell::RefCell;
 use std::sync::LazyLock;
 use std::f64::consts::PI;
 
-use log::{Level, log_enabled};
-use strum::{IntoEnumIterator, VariantArray, VariantNames};
+// use log::{Level, log_enabled};
+
+use strum::{ IntoEnumIterator };
 
 use serde::{Deserialize, Serialize};
 
@@ -28,19 +29,20 @@ use regex::Regex;
 use gtk::{ prelude::* };
 use gtk::{ Application, ApplicationWindow, DrawingArea };
 use gtk::{ Menu, MenuItem, CheckMenuItem,  SeparatorMenuItem };
-use gtk::{ Dialog, DialogFlags, ResponseType, AboutDialog };
+use gtk::{ AboutDialog, /* Dialog, DialogFlags, ResponseType */ };
 
 use gtk::cairo::{ Context, Rectangle, ImageSurface, Format, Region };
-use gtk::cairo::{ FontSlant, FontWeight  };
+// use gtk::cairo::{ FontSlant, FontWeight  };
 
 use gtk::gdk::prelude::GdkSurfaceExt;
 use gtk::gdk_pixbuf::Pixbuf;
 
 use rsvg::SvgHandle;
 
-use chrono::{ DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike };
+use chrono::{ Local, Utc, NaiveDateTime, DateTime, TimeDelta, Timelike };
 
 use linked_hash_map::LinkedHashMap;
+use tween::Tween;
 
 fn parse_float_list(val: &str) -> Vec<f64> {
     
@@ -200,14 +202,36 @@ fn parse_xml_sz_and_vbox(
     Ok((sz, viewbox_xy, viewbox_sz))
 }
 
-fn parse_xml_center(r_src: &mut FilterInputReader) -> Result<DVec2, quick_xml::errors::Error> {
+#[derive(Debug, strum::EnumString, strum::Display)]
+enum FilterTarget {
+    #[strum(to_string = "base")]
+    Base,
+    #[strum(to_string = "base_text")]
+    BaseText,
+    #[strum(to_string = "long_handle")]
+    LongHandle,
+    #[strum(to_string = "short_handle")]
+    ShortHandle,
+    #[strum(to_string = "second_handle")]
+    SecondHandle,
+    #[strum(to_string = "center_circle")]
+    CenterCircle,
+    #[strum(to_string = "sub_second_base")]
+    SubSecondBase,
+    #[strum(to_string = "sub_second_handle")]
+    SubSecondHandle,
+    #[strum(to_string = "sub_second_center_circle")]
+    SubSecondCenterCircle
+}
+
+fn parse_xml_center( r_src: &mut FilterInputReader, target: FilterTarget ) -> Result<DVec2, quick_xml::errors::Error> {
+
     let target_attr_key_transform = "transform";
 
     let target_tag = "g";
     let target_attr_key_groupmode = "inkscape:groupmode";
     let target_attr_val_groupmode = "layer";
     let target_attr_key_label = "inkscape:label";
-    let target_attr_val_label = "center_circle";
 
     let target_tag_ellipse = "ellipse";
     let target_attr_key_cx = "cx";
@@ -261,7 +285,7 @@ fn parse_xml_center(r_src: &mut FilterInputReader) -> Result<DVec2, quick_xml::e
                                     && let Some(attr) = attr
                                 {
                                     if std::str::from_utf8(attr.value.as_ref())
-                                        == Ok(target_attr_val_label)
+                                        == Ok( target.to_string().as_str() )
                                     {
                                         target_layer = true;
                                     }
@@ -320,7 +344,7 @@ fn parse_xml_center(r_src: &mut FilterInputReader) -> Result<DVec2, quick_xml::e
                         debug!("ret: {:?}", ret);
                     }
                 }
-                quick_xml::events::Event::End(ref tag) => {
+                quick_xml::events::Event::End(ref _tag) => {
                     translate_affines.pop();
                 }
                 _ => {}
@@ -333,30 +357,14 @@ fn parse_xml_center(r_src: &mut FilterInputReader) -> Result<DVec2, quick_xml::e
     Ok(ret)
 }
 
-enum FilterTarget {
-    Base,
-    LongHandle,
-    ShortHandle,
-    SecondHandle,
-    CenterCircle,
-}
-
 fn filter_xml(
     r_src: &mut FilterInputReader,
-    t: FilterTarget,
+    target: FilterTarget,
 ) -> Result<FilterOutput, quick_xml::errors::Error> {
     let target_tag = "g";
     let target_attr_key_groupmode = "inkscape:groupmode";
     let target_attr_val_groupmode = "layer";
     let target_attr_key_label = "inkscape:label";
-
-    let target = match t {
-        FilterTarget::Base => "base",
-        FilterTarget::LongHandle => "long_handle",
-        FilterTarget::ShortHandle => "short_handle",
-        FilterTarget::SecondHandle => "second_handle",
-        FilterTarget::CenterCircle => "center_circle",
-    };
 
     let mut writer = quick_xml::Writer::new(Cursor::new(Vec::<u8>::new()));
 
@@ -385,7 +393,7 @@ fn filter_xml(
                                 if let Ok(attr) = tag.try_get_attribute(target_attr_key_label)
                                     && let Some(attr) = attr
                                 {
-                                    if std::str::from_utf8(attr.value.as_ref()) == Ok(target) {
+                                    if std::str::from_utf8(attr.value.as_ref()) == Ok(target.to_string().as_str()) {
                                         output = true;
                                     }
                                 }
@@ -399,7 +407,7 @@ fn filter_xml(
                         assert!(writer.write_event(evt).is_ok())
                     }
                 }
-                quick_xml::events::Event::End(ref tag) => {
+                quick_xml::events::Event::End(ref _tag) => {
                     if depth_dis_output == -1 {
                         assert!(writer.write_event(evt).is_ok())
                     } else if depth == depth_dis_output {
@@ -428,18 +436,26 @@ struct ImageInfo {
     viewbox_sz: DVec2,
 
     bytes_base: Option<Vec<u8>>,
+    bytes_base_text: Option<Vec<u8>>,
     bytes_long_handle: Option<Vec<u8>>,
     bytes_short_handle: Option<Vec<u8>>,
     bytes_second_handle: Option<Vec<u8>>,
     bytes_center_circle: Option<Vec<u8>>,
+    bytes_sub_second_base: Option<Vec<u8>>,
+    bytes_sub_second_handle: Option<Vec<u8>>,
+    bytes_sub_second_center_circle: Option<Vec<u8>>,
 
     svgh_base: Option<SvgHandle>,
     svgh_long_handle: Option<SvgHandle>,
     svgh_short_handle: Option<SvgHandle>,
     svgh_second_handle: Option<SvgHandle>,
     svgh_center_circle: Option<SvgHandle>,
+    svgh_sub_second_base: Option<SvgHandle>,
+    svgh_sub_second_handle: Option<SvgHandle>,
+    svgh_sub_second_center_circle: Option<SvgHandle>,
 
     center: DVec2,
+    center_sub_second: DVec2,
 }
 
 impl ImageInfo {
@@ -450,18 +466,26 @@ impl ImageInfo {
             viewbox_sz: DVec2::ZERO,
 
             bytes_base: None,
+            bytes_base_text: None,
             bytes_long_handle: None,
             bytes_short_handle: None,
             bytes_second_handle: None,
             bytes_center_circle: None,
+            bytes_sub_second_base: None,
+            bytes_sub_second_handle: None,
+            bytes_sub_second_center_circle: None,
 
             svgh_base: None,
             svgh_long_handle: None,
             svgh_short_handle: None,
             svgh_second_handle: None,
             svgh_center_circle: None,
+            svgh_sub_second_base: None,
+            svgh_sub_second_handle: None,
+            svgh_sub_second_center_circle: None,
 
             center: DVec2::ZERO,
+            center_sub_second: DVec2::ZERO,
         }
     }
 }
@@ -536,6 +560,10 @@ fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
         &mut FilterInputReader::from_reader(&src_buf),
         FilterTarget::Base,
     );
+    let src_base_text = filter_xml(
+        &mut FilterInputReader::from_reader(&src_buf),
+        FilterTarget::BaseText,
+    );
     let src_long_handle = filter_xml(
         &mut FilterInputReader::from_reader(&src_buf),
         FilterTarget::LongHandle,
@@ -551,6 +579,18 @@ fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
     let src_center_circle = filter_xml(
         &mut FilterInputReader::from_reader(&src_buf),
         FilterTarget::CenterCircle,
+    );
+    let src_sub_second_base = filter_xml(
+        &mut FilterInputReader::from_reader(&src_buf),
+        FilterTarget::SubSecondBase,
+    );
+    let src_sub_second_handle = filter_xml(
+        &mut FilterInputReader::from_reader(&src_buf),
+        FilterTarget::SubSecondHandle,
+    );
+    let src_sub_second_center_circle = filter_xml(
+        &mut FilterInputReader::from_reader(&src_buf),
+        FilterTarget::SubSecondCenterCircle,
     );
 
     let fn_make_svg_handle = | src_xml : &Vec<u8> | 
@@ -598,7 +638,7 @@ fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
 
     if let Ok(src_xml) = src_center_circle {
 
-        if let Ok(center) = parse_xml_center(&mut FilterInputReader::from_reader(&src_xml)) {
+        if let Ok(center) = parse_xml_center(&mut FilterInputReader::from_reader(&src_xml),FilterTarget::CenterCircle ) {
             ret.center = center;
         }
 
@@ -606,6 +646,28 @@ fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
 
         ret.svgh_center_circle = fn_make_svg_handle( &src_xml );
         ret.bytes_center_circle = Some(src_xml);
+    }
+
+    if let Ok(src_xml) = src_sub_second_base {
+        ret.svgh_sub_second_base = fn_make_svg_handle( &src_xml );
+        ret.bytes_sub_second_base = Some(src_xml);
+    }
+
+    if let Ok(src_xml) = src_sub_second_handle {
+        ret.svgh_sub_second_handle = fn_make_svg_handle( &src_xml );
+        ret.bytes_sub_second_handle = Some(src_xml);
+    }
+
+    if let Ok(src_xml) = src_sub_second_center_circle {
+
+        if let Ok(center) = parse_xml_center(&mut FilterInputReader::from_reader(&src_xml),FilterTarget::SubSecondCenterCircle ) {
+            ret.center_sub_second = center;
+        }
+
+        debug!("ret.center: {:?}", ret.center);
+
+        ret.svgh_sub_second_center_circle = fn_make_svg_handle( &src_xml );
+        ret.bytes_sub_second_center_circle = Some(src_xml);
     }
 
     ret
@@ -739,13 +801,15 @@ struct AppInfo
     zoom_update: bool
 ,   window_pos: Option< ( i32, i32 ) >
 ,   #[serde(skip)] 
-    time_disp: NaiveTime
-
+    time_disp: NaiveDateTime
+,   #[serde(skip)] 
+    time_disp_st: Option< ( NaiveDateTime, DateTime<Utc> ) >
 }
 
 impl AppInfo 
 {
     const fn new() -> Self {
+
         Self
         {
             always_on_top: true
@@ -760,10 +824,20 @@ impl AppInfo
         ,   zoom: 100
         ,   zoom_update: true
         ,   window_pos: None
-        ,   time_disp: NaiveTime::from_hms_opt(0, 0, 0 ).unwrap()
+        ,   time_disp: DateTime::UNIX_EPOCH.naive_utc()
+        ,   time_disp_st: None
         }
     }
+
+    fn reset( &mut self )
+    {
+        self.zoom_update = true;
+        self.time_disp = Local::now().date_naive().and_hms_opt(0,0,0).unwrap();
+        self.time_disp_st = None;
+    }
 }
+
+const MOVE_FAST_SECS: i64 = 5;
 
 fn draw_watch<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a mut AppInfo )
 {
@@ -806,48 +880,94 @@ fn draw_watch<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a
     let time_now_naive = 
         if app_info.time_zone == ""
         {
-            time_now.naive_local().time()
+            time_now.naive_local()
         }
         else
         {
-            let mut time_zone = app_info.time_zone.clone();
+            let time_zone = app_info.time_zone.clone();
 
-            if time_zone.starts_with( "GMT" ) || time_zone.starts_with( "UTC" )
+            if time_zone.starts_with( "GMT+" ) || time_zone.starts_with( "GMT-" )
             {
-                time_zone = format!( "Etc/{}", time_zone );
-            }
+                // FIX 
+                // chrono::Tz::Etc__GMTMinus1 = +1 -> -1
+                // chrono::Tz::Etc__GMTPlus1  = -1 -> +1
+                // chrono::Tz::Etc__GMTMinus<x> = +<x> -> -<x>
+                // chrono::Tz::Etc__GMTPlus<x>  = -<x> -> +<x>
+                // see https://github.com/chronotope/chrono-tz/issues/16
+                // see https://github.com/eggert/tz/blob/ab21ad9710b88f28995b7ed47c6efda47ffb1be5/etcetera#L37-L43
+                // see ```
+                // # Be consistent with POSIX TZ settings in the Zone names,
+                // # even though this is the opposite of what many people expect.
+                // # POSIX has positive signs west of Greenwich, but many people expect
+                // # positive signs east of Greenwich.  For example, TZ='Etc/GMT+4' uses
+                // # the abbreviation "-04" and corresponds to 4 hours behind UT
+                // # (i.e. west of Greenwich) even though many people would expect it to
+                // # mean 4 hours ahead of UT (i.e. east of Greenwich).                
+                // ```
 
-            let tz: Result< chrono_tz::Tz, _> = time_zone.parse();
-            
-            match tz
-            {
-                Ok( x ) =>
+                if let Ok( time_delta ) = i32::from_str( time_zone.trim_start_matches( "GMT" ) )
                 {
-                    time_now.with_timezone( &x ).naive_local().time()
+                    let offset = chrono::FixedOffset::east_opt( time_delta * 60 * 60 ).unwrap();
+                    time_now.with_timezone( &offset ).naive_local()
                 }
-            ,    _ => 
+                else 
                 {
-                    time_now.naive_local().time() 
+                    time_now.naive_local()
+                }
+            }
+            else 
+            {
+                let tz: Result< chrono_tz::Tz, _> = time_zone.parse();
+                
+                match tz
+                {
+                    Ok( offset ) =>
+                    {
+                        time_now.with_timezone( &offset ).naive_local()
+                    }
+                ,    _ => 
+                    {
+                        time_now.naive_local()
+                    }
                 }
             }
        }
        ;
 
-    // let ( diff:u32, sign: i32 ) = 
     let time_delta = ( time_now_naive - app_info.time_disp ).num_seconds();
-    if time_delta.abs() <= 60
+
+    if time_delta.abs() <= 10
     {
         app_info.time_disp = time_now_naive;
+        app_info.time_disp_st = None;
     }
     else 
     {
-        let add = 
-            if time_delta.abs() < 800        { 30 }
-            else if time_delta.abs() < 2400  { 90 }
-            else if time_delta.abs() < 4800  { 180 }
-            else                             { 360 }
-            ;
-        app_info.time_disp += TimeDelta::seconds( time_delta.signum() * add );
+        if app_info.time_disp_st.is_none()
+        {
+            app_info.time_disp_st = Some( ( app_info.time_disp, time_now.to_utc() ) );
+        }
+
+        let ( time_disp_st, time_st ) = app_info.time_disp_st.unwrap();
+
+        let timestamp_disp_du = TimeDelta::seconds( MOVE_FAST_SECS );
+
+        let mut tweener = tween::Tweener::quad_in_out( 0.0, 1.0, timestamp_disp_du.num_milliseconds()  );
+            
+        let timestamp_disp_diff = time_now.to_utc() - time_st;
+
+        let pos = tweener.move_to( timestamp_disp_diff.num_milliseconds() );
+
+        if pos < 0.0 || pos >= 1.0
+        {
+            app_info.time_disp = time_now_naive;
+            app_info.time_disp_st = None;
+        }
+        else
+        {
+            let add=  TimeDelta::milliseconds( ( ( time_now_naive - time_disp_st ).num_milliseconds() as f64 * pos ) as i64 );
+            app_info.time_disp = time_disp_st + add;            
+        }
     }
 
     let time_secs = app_info.time_disp.hour12().1 * 60 * 60 + app_info.time_disp.minute() * 60 + app_info.time_disp.second();
@@ -884,7 +1004,7 @@ fn draw_watch<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a
 }
 
 fn make_theme_menu(
-    win: &ApplicationWindow, 
+    _win: &ApplicationWindow, 
     da: &DrawingArea, 
     image_info: &Rc< RefCell< ImageInfo > >,
     app_info: &Rc< RefCell< AppInfo > >    
@@ -1023,6 +1143,7 @@ fn make_timezone_menu(
         move |_| {
             let mut _app_info = _app_info.borrow_mut();
             _app_info.time_zone = String::from( "" );
+            _app_info.time_disp_st = None;
             _da.queue_draw();
         }  
     );
@@ -1356,7 +1477,8 @@ fn main() {
         }
     }
 
-    app_info.borrow_mut().zoom_update = true;
+    // after setup
+    app_info.borrow_mut().reset();
 
     let _app_info = app_info.clone();
 
@@ -1450,7 +1572,7 @@ fn main() {
 
         window.show_all();
 
-        gtk::glib::source::timeout_add_local(std::time::Duration::from_millis(75), move || 
+        gtk::glib::source::timeout_add_local(std::time::Duration::from_millis(20), move || 
             {
                 /* log::debug!("timeout" );         */
                 da.queue_draw();

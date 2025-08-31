@@ -41,13 +41,13 @@ fn main()
     let src = "scale(1,1) rotate(45 100 330) skewX(10) skewY(10) translate(20,0) matrix( a,b,c,d,e,f )";
 
     let re = Regex::new(r"(?i)(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^\)]+)\)").unwrap();
-    let reF = Regex::new(r"[-+]?([0-9]*\.[0-9]+|[0-9]+\.?[0-9]*)([eE][-+]?[0-9]+)?").unwrap();
+    let re_f = Regex::new(r"[-+]?([0-9]*\.[0-9]+|[0-9]+\.?[0-9]*)([eE][-+]?[0-9]+)?").unwrap();
 
     let mut mat = DAffine2::IDENTITY;
 
     for caps in re.captures_iter(src) 
     {
-        let arg: Vec<f64>  = reF.captures_iter(&caps[2])
+        let arg: Vec<f64>  = re_f.captures_iter(&caps[2])
             .map( | x | f64::from_str( &x[0] ) )
             .filter( |x| if let Ok(_) = x { true } else { false } )
             .map( | x | { x.unwrap_or_default() } )
@@ -57,7 +57,7 @@ fn main()
         let op = caps[1].to_lowercase();
     for caps in re.captures_iter(src) 
     {
-        let arg: Vec<f64>  = reF.captures_iter(&caps[2])
+        let arg: Vec<f64>  = re_f.captures_iter(&caps[2])
             .map( | x | f64::from_str( &x[0] ) )
             .filter( |x| if let Ok(_) = x { true } else { false } )
             .map( | x | { x.unwrap_or_default() } )
