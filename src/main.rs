@@ -990,22 +990,16 @@ fn draw_watch<'a>(
 
     if has_time_disp_st != app_info.time_disp_st.is_some()
     {
-        /*
-        if let Some( sourceId ) = app_info.timer_sourceid.borrow_mut().as_mut()
-        {
-            sourceId.remove();
-        }
-        */
-
-        let is_slow = app_info.time_disp_st.is_none();
-
         // update timer
+
+        let is_fast = app_info.time_disp_st.is_some();
+
         let _da = da.clone();
 
         let old_timer_sourceid = app_info.timer_sourceid.replace(
             Some(
                 gtk::glib::source::timeout_add_local(
-                    std::time::Duration::from_millis( get_timer_interval( is_slow ) ),
+                    std::time::Duration::from_millis( get_timer_interval( is_fast ) ),
                     move || 
                     {
                         _da.queue_draw();
@@ -1433,33 +1427,6 @@ fn make_popup_menu(
         }
     );
 
-    /*
-    let menu_item_pref_enable_update_cycle_slow = gtk::CheckMenuItem::with_label( "Enable update cycle slow" );
-
-    menu_item_pref_enable_update_cycle_slow.set_active( app_info.borrow().enable_update_cycle_slow );
-    
-    let _da = da.clone();
-    let _app_info = app_info.clone();
-
-    menu_item_pref_enable_update_cycle_slow.connect_activate( move |_| 
-        {
-            let mut _app_info = _app_info.borrow_mut();
-            _app_info.enable_update_cycle_slow = !_app_info.enable_update_cycle_slow;
-
-            let _da = _da.clone();
-
-            gtk::glib::source::timeout_add_local(
-                std::time::Duration::from_millis( get_timer_interval( _app_info.enable_update_cycle_slow ) ),
-                move || 
-                {
-                    _da.queue_draw();
-                    gtk::glib::ControlFlow::Continue
-                }        
-            );
-        }
-    );
-    */
-
     let menu_item_pref_time_zone = MenuItem::with_label( "Time Zone" );
     let menu_item_pref_theme = MenuItem::with_label( "Theme" );
     let menu_item_pref_zoom = MenuItem::with_label( "Zoom" );
@@ -1544,9 +1511,9 @@ fn make_popup_menu(
 const UPDATE_CYCLE_SLOW: u64 = 125;
 const UPDATE_CYCLE_FAST: u64 = 25;
 
-fn get_timer_interval( is_slow: bool ) -> u64
+fn get_timer_interval( is_fast: bool ) -> u64
 {
-    if is_slow { UPDATE_CYCLE_SLOW } else { UPDATE_CYCLE_FAST }
+    if is_fast { UPDATE_CYCLE_FAST } else { UPDATE_CYCLE_SLOW } 
 }
 fn main() {
     pretty_env_logger::init();
@@ -1707,7 +1674,7 @@ fn main() {
         _app_info.borrow_mut().timer_sourceid.replace(
             Some(
                 gtk::glib::source::timeout_add_local(
-                    std::time::Duration::from_millis( get_timer_interval( true ) ),
+                    std::time::Duration::from_millis( get_timer_interval( false ) ),
                     move || 
                     {
                         _da.queue_draw();
