@@ -796,7 +796,6 @@ struct AppInfo
 ,   theme: AppInfoTheme
 ,   theme_custome: Option< String >
 ,   zoom: u32   
-,   enable_update_cycle_slow: bool
 ,   #[serde(skip)] 
     zoom_update: bool
 ,   window_pos: Option< ( i32, i32 ) >
@@ -824,7 +823,6 @@ impl AppInfo
         ,   theme: AppInfoTheme::Theme1
         ,   theme_custome: None
         ,   zoom: 100
-        ,   enable_update_cycle_slow: false
         ,   zoom_update: true
         ,   window_pos: None
         ,   time_disp: DateTime::UNIX_EPOCH.naive_utc()
@@ -1439,10 +1437,6 @@ fn make_popup_menu(
     menu_pref.append( &menu_item_pref_enable_second_hand_smoothly );
     menu_pref.append( &menu_item_pref_show_date );
     menu_pref.append( &SeparatorMenuItem::new() );
-/* 
-    menu_pref.append( &menu_item_pref_enable_update_cycle_slow );
-    menu_pref.append( &SeparatorMenuItem::new() );
-    */
     menu_pref.append( &menu_item_pref_time_zone );
     menu_pref.append( &menu_item_pref_theme );
     menu_pref.append( &menu_item_pref_zoom );
