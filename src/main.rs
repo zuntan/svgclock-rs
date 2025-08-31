@@ -12,12 +12,13 @@ use std::{io::Cursor, str};
 use std::convert::AsRef;
 
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::{ Cell, RefCell };
 use std::sync::LazyLock;
 use std::f64::consts::PI;
 
 // use log::{Level, log_enabled};
 
+use glib::ControlFlow;
 use strum::{ IntoEnumIterator };
 
 use serde::{Deserialize, Serialize};
@@ -797,6 +798,7 @@ struct AppInfo
 ,   theme: AppInfoTheme
 ,   theme_custome: Option< String >
 ,   zoom: u32   
+,   enable_update_cycle_slow: bool
 ,   #[serde(skip)] 
     zoom_update: bool
 ,   window_pos: Option< ( i32, i32 ) >
@@ -804,6 +806,8 @@ struct AppInfo
     time_disp: NaiveDateTime
 ,   #[serde(skip)] 
     time_disp_st: Option< ( NaiveDateTime, DateTime<Utc> ) >
+,   #[serde(skip)] 
+    timer_sourceid: RefCell< Option< gtk::glib::SourceId > >
 }
 
 impl AppInfo 
@@ -822,10 +826,12 @@ impl AppInfo
         ,   theme: AppInfoTheme::Theme1
         ,   theme_custome: None
         ,   zoom: 100
+        ,   enable_update_cycle_slow: false
         ,   zoom_update: true
         ,   window_pos: None
         ,   time_disp: DateTime::UNIX_EPOCH.naive_utc()
         ,   time_disp_st: None
+        ,   timer_sourceid: RefCell::new( None )
         }
     }
 
@@ -838,8 +844,11 @@ impl AppInfo
 }
 
 const MOVE_FAST_SECS: i64 = 5;
+const ENABLE_ROTATE_CENTER_CIRCLE: bool = false;
 
-fn draw_watch<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a mut AppInfo )
+fn draw_watch<'a>( 
+    da: &DrawingArea, 
+    cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a mut AppInfo )
 {
     let zoom_factor = app_info.zoom as f64 / 100.0;
 
@@ -849,25 +858,32 @@ fn draw_watch<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a
     );
 
     let viewport = Rectangle::new(0.0, 0.0, sz.x, sz.y );
+
+    let func_render = | svg_handle : &SvgHandle |
+    {
+        let svg_renderer = rsvg::CairoRenderer::new(svg_handle);
+        svg_renderer.render_document(cctx, &viewport).unwrap();
+    };
+
     let center = DVec2
     {
         x: sz.x * ( image_info.center.x / image_info.viewbox_sz.x )
     ,   y: sz.y * ( image_info.center.y / image_info.viewbox_sz.y )
     };
 
-    if let Some( x ) = image_info.svgh_base.as_ref()
+    let center_sub_second = DVec2
     {
-        let svg_renderer = rsvg::CairoRenderer::new(x);
-        svg_renderer.render_document(cctx, &viewport).unwrap();
-    }
+        x: sz.x * ( image_info.center_sub_second.x / image_info.viewbox_sz.x )
+    ,   y: sz.y * ( image_info.center_sub_second.y / image_info.viewbox_sz.y )
+    };
 
-    let func_rotate = | svg_handle : &SvgHandle, angle : f64 |
+    let func_render_rotate = | svg_handle : &SvgHandle, _center: &DVec2, angle : f64 |
     {
         let _ = cctx.save();
 
-        cctx.translate( center.x * 1.0, center.y * 1.0 );
+        cctx.translate( _center.x * 1.0, _center.y * 1.0 );
         cctx.rotate( angle * ( PI / 180.0 ) );
-        cctx.translate( center.x * -1.0, center.y * -1.0 );
+        cctx.translate( _center.x * -1.0, _center.y * -1.0 );
 
         let svg_renderer = rsvg::CairoRenderer::new( svg_handle );
         svg_renderer.render_document(cctx, &viewport).unwrap();
@@ -934,6 +950,8 @@ fn draw_watch<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a
        }
        ;
 
+    let has_time_disp_st = app_info.time_disp_st.is_some();
+
     let time_delta = ( time_now_naive - app_info.time_disp ).num_seconds();
 
     if time_delta.abs() <= 10
@@ -970,6 +988,39 @@ fn draw_watch<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a
         }
     }
 
+    if has_time_disp_st != app_info.time_disp_st.is_some()
+    {
+        /*
+        if let Some( sourceId ) = app_info.timer_sourceid.borrow_mut().as_mut()
+        {
+            sourceId.remove();
+        }
+        */
+
+        let is_slow = app_info.time_disp_st.is_none();
+
+        // update timer
+        let _da = da.clone();
+
+        let old_timer_sourceid = app_info.timer_sourceid.replace(
+            Some(
+                gtk::glib::source::timeout_add_local(
+                    std::time::Duration::from_millis( get_timer_interval( is_slow ) ),
+                    move || 
+                    {
+                        _da.queue_draw();
+                        gtk::glib::ControlFlow::Continue
+                    }
+                )            
+            )
+        );
+
+        if let Some( sourceid ) = old_timer_sourceid
+        {
+            sourceid.remove();
+        }
+    }
+
     let time_secs = app_info.time_disp.hour12().1 * 60 * 60 + app_info.time_disp.minute() * 60 + app_info.time_disp.second();
 
     let angle_hour = time_secs as f64 / ( 12.0 * 60.0 * 60.0 ) * 360.0;
@@ -978,27 +1029,67 @@ fn draw_watch<'a>( cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a
     let angle_sec_delta = if app_info.enable_second_hand_smoothly { time_now.timestamp_subsec_millis() as f64 / 1000.0 } else { 0.0 };
     let angle_sec = ( time_now.second() as f64 + angle_sec_delta ) / 60.0 * 360.0;
 
+    if let Some( x ) = image_info.svgh_base.as_ref()
+    {
+        let svg_renderer = rsvg::CairoRenderer::new(x);
+        svg_renderer.render_document(cctx, &viewport).unwrap();
+    }
+
+    if app_info.show_seconds && app_info.enable_sub_second_hand
+    {
+
+        if let Some( x ) = image_info.svgh_sub_second_base.as_ref()
+        {
+            let svg_renderer = rsvg::CairoRenderer::new(x);
+            svg_renderer.render_document(cctx, &viewport).unwrap();
+        }   
+
+        if let Some( x ) = image_info.svgh_sub_second_handle.as_ref()
+        {
+            func_render_rotate( x, &center_sub_second, angle_sec );
+        }   
+
+        if let Some( x ) = image_info.svgh_sub_second_center_circle.as_ref()
+        {
+            if ENABLE_ROTATE_CENTER_CIRCLE
+            {
+                func_render_rotate( x, &center_sub_second, angle_sec );
+            }
+            else
+            {
+                func_render( x );
+            }    
+        }   
+    }
+
     if let Some( x ) = image_info.svgh_long_handle.as_ref()
     {
-        func_rotate( x, angle_min );
+        func_render_rotate( x, &center, angle_min );
     }    
 
     if let Some( x ) = image_info.svgh_short_handle.as_ref()
     {
-        func_rotate( x, angle_hour );
+        func_render_rotate( x, &center, angle_hour );
     }    
 
-    if app_info.show_seconds
+    if app_info.show_seconds && !app_info.enable_sub_second_hand
     {
         if let Some( x ) = image_info.svgh_second_handle.as_ref()
         {
-            func_rotate( x, angle_sec );
+            func_render_rotate( x, &center, angle_sec );
         }   
     }
 
     if let Some( x ) = image_info.svgh_center_circle.as_ref()
     {
-        func_rotate( x, angle_sec );
+        if ENABLE_ROTATE_CENTER_CIRCLE
+        {
+            func_render_rotate( x, &center, angle_sec );
+        }
+        else
+        {
+            func_render( x );
+        }
     }   
 
 }
@@ -1243,7 +1334,7 @@ fn make_popup_menu(
     da: &DrawingArea, 
     app_info: &Rc< RefCell< AppInfo > >,
     image_info: &Rc< RefCell< ImageInfo > >,
-    logo: Option<Pixbuf>
+    logo: Option<Pixbuf>,
 ) -> Menu
 {
     let menu = Menu::new();
@@ -1342,6 +1433,33 @@ fn make_popup_menu(
         }
     );
 
+    /*
+    let menu_item_pref_enable_update_cycle_slow = gtk::CheckMenuItem::with_label( "Enable update cycle slow" );
+
+    menu_item_pref_enable_update_cycle_slow.set_active( app_info.borrow().enable_update_cycle_slow );
+    
+    let _da = da.clone();
+    let _app_info = app_info.clone();
+
+    menu_item_pref_enable_update_cycle_slow.connect_activate( move |_| 
+        {
+            let mut _app_info = _app_info.borrow_mut();
+            _app_info.enable_update_cycle_slow = !_app_info.enable_update_cycle_slow;
+
+            let _da = _da.clone();
+
+            gtk::glib::source::timeout_add_local(
+                std::time::Duration::from_millis( get_timer_interval( _app_info.enable_update_cycle_slow ) ),
+                move || 
+                {
+                    _da.queue_draw();
+                    gtk::glib::ControlFlow::Continue
+                }        
+            );
+        }
+    );
+    */
+
     let menu_item_pref_time_zone = MenuItem::with_label( "Time Zone" );
     let menu_item_pref_theme = MenuItem::with_label( "Theme" );
     let menu_item_pref_zoom = MenuItem::with_label( "Zoom" );
@@ -1356,6 +1474,10 @@ fn make_popup_menu(
     menu_pref.append( &menu_item_pref_enable_second_hand_smoothly );
     menu_pref.append( &menu_item_pref_show_date );
     menu_pref.append( &SeparatorMenuItem::new() );
+/* 
+    menu_pref.append( &menu_item_pref_enable_update_cycle_slow );
+    menu_pref.append( &SeparatorMenuItem::new() );
+    */
     menu_pref.append( &menu_item_pref_time_zone );
     menu_pref.append( &menu_item_pref_theme );
     menu_pref.append( &menu_item_pref_zoom );
@@ -1419,6 +1541,13 @@ fn make_popup_menu(
     menu
 }
 
+const UPDATE_CYCLE_SLOW: u64 = 125;
+const UPDATE_CYCLE_FAST: u64 = 25;
+
+fn get_timer_interval( is_slow: bool ) -> u64
+{
+    if is_slow { UPDATE_CYCLE_SLOW } else { UPDATE_CYCLE_FAST }
+}
 fn main() {
     pretty_env_logger::init();
 
@@ -1506,6 +1635,7 @@ fn main() {
 
         let da =  DrawingArea::new();
 
+        let _da = da.clone();
         let _window = window.clone();
         let _image_info = image_info.clone();
         let __app_info = _app_info.clone();
@@ -1513,7 +1643,7 @@ fn main() {
         da.connect_draw( move | _, cr | 
             {
                 update_region( &_window, &_image_info.borrow(), &mut __app_info.borrow_mut() );
-                draw_watch( cr, &_image_info.borrow(), &mut __app_info.borrow_mut() );
+                draw_watch( &_da, cr, &_image_info.borrow(), &mut __app_info.borrow_mut() );
                 gtk::glib::Propagation::Proceed
             }
         );
@@ -1544,7 +1674,7 @@ fn main() {
                     }
                 ,   3 => /* right button */
                     {
-                        let menu = make_popup_menu( &_app, &_window,&_da, &__app_info, &_image_info, logo );
+                        let menu = make_popup_menu( &_app, &_window, &_da, &__app_info, &_image_info, logo );
 
                         menu.show_all();
                         menu.popup_at_pointer( Some( evt ) );
@@ -1572,12 +1702,19 @@ fn main() {
 
         window.show_all();
 
-        gtk::glib::source::timeout_add_local(std::time::Duration::from_millis(20), move || 
-            {
-                /* log::debug!("timeout" );         */
-                da.queue_draw();
-                gtk::glib::ControlFlow::Continue
-            }
+        let _da = da.clone();
+
+        _app_info.borrow_mut().timer_sourceid.replace(
+            Some(
+                gtk::glib::source::timeout_add_local(
+                    std::time::Duration::from_millis( get_timer_interval( true ) ),
+                    move || 
+                    {
+                        _da.queue_draw();
+                        gtk::glib::ControlFlow::Continue
+                    }
+                )            
+            )
         );
     });
 
