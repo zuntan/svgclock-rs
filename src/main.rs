@@ -44,9 +44,9 @@ use chrono::{ Local, Utc, NaiveDateTime, DateTime, TimeDelta, Timelike };
 use linked_hash_map::LinkedHashMap;
 
 fn parse_float_list(val: &str) -> Vec<f64> {
-    
+
     static RE_FLOAT: LazyLock<Regex> = LazyLock::new(
-        || 
+        ||
         {
             Regex::new(r"[-+]?([0-9]*\.[0-9]+|[0-9]+\.?[0-9]*)([eE][-+]?[0-9]+)?").unwrap()
         }
@@ -63,9 +63,9 @@ fn parse_float_list(val: &str) -> Vec<f64> {
 }
 
 fn parse_svg_transform_value(transform: &str) -> Option<DAffine2> {
-    
+
     static RE_TRANSLATE: LazyLock< Regex > = LazyLock::new(
-        || 
+        ||
         {
             Regex::new(r"(?i)(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^\)]+)\)").unwrap()
         }
@@ -491,10 +491,10 @@ impl ImageInfo {
 
 fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< ImageInfo >
 {
-    let src_buf: Option< Vec<u8> > = 
+    let src_buf: Option< Vec<u8> > =
         match theme
         {
-            AppInfoTheme::Theme1 => 
+            AppInfoTheme::Theme1 =>
             {
                 let mut src_buf = Vec::<u8>::new();
                 let mut src = File::open("clock_theme_1.svg").unwrap();
@@ -503,7 +503,7 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
                 Some( src_buf )
             }
 
-            AppInfoTheme::Theme2 => 
+            AppInfoTheme::Theme2 =>
             {
                 let mut src_buf = Vec::<u8>::new();
                 let mut src = File::open("clock_theme_2.svg").unwrap();
@@ -512,7 +512,7 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
                 Some( src_buf )
             }
 
-            AppInfoTheme::Theme3 => 
+            AppInfoTheme::Theme3 =>
             {
                 let mut src_buf = Vec::<u8>::new();
                 let mut src = File::open("clock_theme_3.svg").unwrap();
@@ -542,18 +542,18 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
             }
         }
         ;
-    
+
     if let Some( src_buf ) = src_buf
     {
         Some( load_xml( &src_buf) )
     }
-    else 
+    else
     {
         None
     }
 }
 
-fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo 
+fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
 {
     let src_base = filter_xml(
         &mut FilterInputReader::from_reader(&src_buf),
@@ -592,7 +592,7 @@ fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
         FilterTarget::SubSecondCenterCircle,
     );
 
-    let fn_make_svg_handle = | src_xml : &Vec<u8> | 
+    let fn_make_svg_handle = | src_xml : &Vec<u8> |
     {
         let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( src_xml ));
 
@@ -676,7 +676,7 @@ fn load_logo() -> Option< Pixbuf >
 {
     // load logo
     let mut src_buf = Vec::<u8>::new();
-    
+
     let mut src = File::open("logo.svg").unwrap();
     src.read_to_end(&mut src_buf).unwrap();
 
@@ -684,11 +684,11 @@ fn load_logo() -> Option< Pixbuf >
 
         let sz = result.0;
         let surface = ImageSurface::create(Format::ARgb32, sz.x, sz.y ).unwrap();
-        
+
         {
             let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &src_buf ));
 
-            let svg_handle = 
+            let svg_handle =
                 rsvg::Loader::new()
                 .read_stream(
                     &svg_stream,
@@ -745,13 +745,13 @@ fn make_region( image_info: &ImageInfo, sz: DVec2 ) -> Option< Region >
 
         surface_mask.create_region()
     }
-    else 
+    else
     {
         None
     }
 }
 
-fn update_region<'a>( window: &'a ApplicationWindow, image_info: &'a ImageInfo, app_info: &'a mut AppInfo ) 
+fn update_region<'a>( window: &'a ApplicationWindow, image_info: &'a ImageInfo, app_info: &'a mut AppInfo )
 {
     if app_info.zoom_update
     {
@@ -761,7 +761,7 @@ fn update_region<'a>( window: &'a ApplicationWindow, image_info: &'a ImageInfo, 
         {
             let zoom_factor = app_info.zoom as f64 / 100.0;
 
-            let sz = DVec2::new( 
+            let sz = DVec2::new(
                 image_info.sz.x as f64 * zoom_factor
             ,   image_info.sz.y as f64 * zoom_factor
             );
@@ -779,7 +779,7 @@ enum AppInfoTheme
 {
     Theme1
 ,   Theme2
-,   Theme3    
+,   Theme3
 ,   Custom
 }
 
@@ -795,19 +795,19 @@ struct AppInfo
 ,   time_zone: String
 ,   theme: AppInfoTheme
 ,   theme_custome: Option< String >
-,   zoom: u32   
-,   #[serde(skip)] 
+,   zoom: u32
+,   #[serde(skip)]
     zoom_update: bool
 ,   window_pos: Option< ( i32, i32 ) >
-,   #[serde(skip)] 
+,   #[serde(skip)]
     time_disp: NaiveDateTime
-,   #[serde(skip)] 
+,   #[serde(skip)]
     time_disp_st: Option< ( NaiveDateTime, DateTime<Utc> ) >
-,   #[serde(skip)] 
+,   #[serde(skip)]
     timer_sourceid: RefCell< Option< gtk::glib::SourceId > >
 }
 
-impl AppInfo 
+impl AppInfo
 {
     const fn new() -> Self {
 
@@ -842,13 +842,13 @@ impl AppInfo
 const MOVE_FAST_SECS: i64 = 5;
 const ENABLE_ROTATE_CENTER_CIRCLE: bool = false;
 
-fn draw_watch<'a>( 
-    da: &DrawingArea, 
+fn draw_watch<'a>(
+    da: &DrawingArea,
     cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a mut AppInfo )
 {
     let zoom_factor = app_info.zoom as f64 / 100.0;
 
-    let sz = DVec2::new( 
+    let sz = DVec2::new(
         image_info.sz.x as f64 * zoom_factor
     ,   image_info.sz.y as f64 * zoom_factor
     );
@@ -889,7 +889,7 @@ fn draw_watch<'a>(
 
     let time_now = Local::now();
 
-    let time_now_naive = 
+    let time_now_naive =
         if app_info.time_zone == ""
         {
             time_now.naive_local()
@@ -900,7 +900,7 @@ fn draw_watch<'a>(
 
             if time_zone.starts_with( "GMT+" ) || time_zone.starts_with( "GMT-" )
             {
-                // FIX 
+                // FIX
                 // chrono::Tz::Etc__GMTMinus1 = +1 -> -1
                 // chrono::Tz::Etc__GMTPlus1  = -1 -> +1
                 // chrono::Tz::Etc__GMTMinus<x> = +<x> -> -<x>
@@ -914,7 +914,7 @@ fn draw_watch<'a>(
                 // # positive signs east of Greenwich.  For example, TZ='Etc/GMT+4' uses
                 // # the abbreviation "-04" and corresponds to 4 hours behind UT
                 // # (i.e. west of Greenwich) even though many people would expect it to
-                // # mean 4 hours ahead of UT (i.e. east of Greenwich).                
+                // # mean 4 hours ahead of UT (i.e. east of Greenwich).
                 // ```
 
                 if let Ok( time_delta ) = i32::from_str( time_zone.trim_start_matches( "GMT" ) )
@@ -922,22 +922,22 @@ fn draw_watch<'a>(
                     let offset = chrono::FixedOffset::east_opt( time_delta * 60 * 60 ).unwrap();
                     time_now.with_timezone( &offset ).naive_local()
                 }
-                else 
+                else
                 {
                     time_now.naive_local()
                 }
             }
-            else 
+            else
             {
                 let tz: Result< chrono_tz::Tz, _> = time_zone.parse();
-                
+
                 match tz
                 {
                     Ok( offset ) =>
                     {
                         time_now.with_timezone( &offset ).naive_local()
                     }
-                ,    _ => 
+                ,    _ =>
                     {
                         time_now.naive_local()
                     }
@@ -955,7 +955,7 @@ fn draw_watch<'a>(
         app_info.time_disp = time_now_naive;
         app_info.time_disp_st = None;
     }
-    else 
+    else
     {
         if app_info.time_disp_st.is_none()
         {
@@ -967,7 +967,7 @@ fn draw_watch<'a>(
         let timestamp_disp_du = TimeDelta::seconds( MOVE_FAST_SECS );
 
         let mut tweener = tween::Tweener::quad_in_out( 0.0, 1.0, timestamp_disp_du.num_milliseconds()  );
-            
+
         let timestamp_disp_diff = time_now.to_utc() - time_st;
 
         let pos = tweener.move_to( timestamp_disp_diff.num_milliseconds() );
@@ -980,7 +980,7 @@ fn draw_watch<'a>(
         else
         {
             let add=  TimeDelta::milliseconds( ( ( time_now_naive - time_disp_st ).num_milliseconds() as f64 * pos ) as i64 );
-            app_info.time_disp = time_disp_st + add;            
+            app_info.time_disp = time_disp_st + add;
         }
     }
 
@@ -997,12 +997,12 @@ fn draw_watch<'a>(
                 Some(
                     gtk::glib::source::timeout_add_local(
                         std::time::Duration::from_millis( get_timer_interval( is_fast ) ),
-                        move || 
+                        move ||
                         {
                             da.queue_draw();
                             gtk::glib::ControlFlow::Continue
                         }
-                    )            
+                    )
                 )
             );
 
@@ -1034,12 +1034,12 @@ fn draw_watch<'a>(
         {
             let svg_renderer = rsvg::CairoRenderer::new(x);
             svg_renderer.render_document(cctx, &viewport).unwrap();
-        }   
+        }
 
         if let Some( x ) = image_info.svgh_sub_second_handle.as_ref()
         {
             func_render_rotate( x, &center_sub_second, angle_sec );
-        }   
+        }
 
         if let Some( x ) = image_info.svgh_sub_second_center_circle.as_ref()
         {
@@ -1050,26 +1050,26 @@ fn draw_watch<'a>(
             else
             {
                 func_render( x );
-            }    
-        }   
+            }
+        }
     }
 
     if let Some( x ) = image_info.svgh_long_handle.as_ref()
     {
         func_render_rotate( x, &center, angle_min );
-    }    
+    }
 
     if let Some( x ) = image_info.svgh_short_handle.as_ref()
     {
         func_render_rotate( x, &center, angle_hour );
-    }    
+    }
 
     if app_info.show_seconds && !app_info.enable_sub_second_hand
     {
         if let Some( x ) = image_info.svgh_second_handle.as_ref()
         {
             func_render_rotate( x, &center, angle_sec );
-        }   
+        }
     }
 
     if let Some( x ) = image_info.svgh_center_circle.as_ref()
@@ -1082,38 +1082,38 @@ fn draw_watch<'a>(
         {
             func_render( x );
         }
-    }   
+    }
 
 }
 
 fn make_theme_menu(
-    window: &ApplicationWindow, 
-    da: &DrawingArea, 
+    window: &ApplicationWindow,
+    da: &DrawingArea,
     image_info: &Rc< RefCell< ImageInfo > >,
-    app_info: &Rc< RefCell< AppInfo > >    
+    app_info: &Rc< RefCell< AppInfo > >
 ) -> Menu
 {
     let menu = Menu::new();
 
     for ait in AppInfoTheme::iter()
     {
-        let menu_item = CheckMenuItem::with_label( ait.to_string().as_str() );          
+        let menu_item = CheckMenuItem::with_label( ait.to_string().as_str() );
 
         menu_item.set_active( ait == app_info.borrow().theme );
 
         {
-            let app_info = app_info.clone();    
+            let app_info = app_info.clone();
             let image_info = image_info.clone();
 
             menu_item.connect_activate(
-                move |_| 
+                move |_|
                 {
                     let mut app_info = app_info.borrow_mut();
                     app_info.theme = ait;
                     app_info.zoom = 100;
                     app_info.zoom_update = true;
                     image_info.replace( load_theme( app_info.theme, app_info.theme_custome.clone() ).unwrap() );
-                }  
+                }
             );
         }
 
@@ -1122,19 +1122,19 @@ fn make_theme_menu(
             menu_item.set_sensitive( app_info.borrow().theme_custome.is_some() );
         }
 
-        menu.append( &menu_item );        
+        menu.append( &menu_item );
     }
 
-    menu      
+    menu
 }
 
 fn make_zoom_menu(
-    da: &DrawingArea, 
-    app_info: &Rc< RefCell< AppInfo > >    
+    da: &DrawingArea,
+    app_info: &Rc< RefCell< AppInfo > >
 ) -> Menu
 {
-    static ZOOMS: LazyLock< Vec<u32> > = LazyLock::new( 
-        || 
+    static ZOOMS: LazyLock< Vec<u32> > = LazyLock::new(
+        ||
         {
             (30..=230).step_by(10).collect()
         }
@@ -1153,31 +1153,31 @@ fn make_zoom_menu(
     {
         let label = format!( "{}%", x );
 
-        let menu_item = CheckMenuItem::with_label( label.as_str() );           
+        let menu_item = CheckMenuItem::with_label( label.as_str() );
 
         menu_item.set_active( app_info.borrow().zoom == x );
 
         {
-            let app_info = app_info.clone();    
+            let app_info = app_info.clone();
 
             menu_item.connect_activate(
                 move |_| {
                     let mut app_info = app_info.borrow_mut();
                     app_info.zoom = x;
                     app_info.zoom_update = true;
-                }  
+                }
             );
         }
 
         menu.append( &menu_item );
     }
 
-    menu    
+    menu
 }
 
 fn make_timezone_menu(
-    da: &DrawingArea, 
-    app_info: &Rc< RefCell< AppInfo > >    
+    da: &DrawingArea,
+    app_info: &Rc< RefCell< AppInfo > >
 ) -> Menu
 {
     // first parse
@@ -1188,7 +1188,7 @@ fn make_timezone_menu(
     {
         let n = x.name();
         let p = n.split_once( "/" );
-        
+
         if let Some( ( area, city)  ) = p
         {
             if ! dic.contains_key( area )
@@ -1222,10 +1222,10 @@ fn make_timezone_menu(
     let menu_item_local_time = CheckMenuItem::with_label( "Local Time" );
 
     menu_item_local_time.set_active( app_info.borrow().time_zone == "" );
-    
-    {    
+
+    {
         let da = da.clone();
-        let app_info = app_info.clone();    
+        let app_info = app_info.clone();
 
         menu_item_local_time.connect_activate(
             move |_| {
@@ -1233,7 +1233,7 @@ fn make_timezone_menu(
                 app_info.time_zone = String::from( "" );
                 app_info.time_disp_st = None;
                 da.queue_draw();
-            }  
+            }
         );
     }
 
@@ -1242,17 +1242,17 @@ fn make_timezone_menu(
     let menu_item_utc = CheckMenuItem::with_label( "UTC" );
 
     menu_item_utc.set_active( app_info.borrow().time_zone == "UTC" );
-    
+
     {
         let da = da.clone();
-        let app_info = app_info.clone();    
-        
+        let app_info = app_info.clone();
+
         menu_item_utc.connect_activate(
             move |_| {
                 let mut app_info = app_info.borrow_mut();
                 app_info.time_zone = String::from( "UTC" );
                 da.queue_draw();
-            }  
+            }
         );
     }
 
@@ -1266,7 +1266,7 @@ fn make_timezone_menu(
         "GMT-12", "GMT-11", "GMT-10"
     ,   "GMT-9", "GMT-8", "GMT-7", "GMT-6", "GMT-5", "GMT-4", "GMT-3", "GMT-2", "GMT-1"
     ,   "GMT"
-    ,   "GMT+1", "GMT+2", "GMT+3", "GMT+4", "GMT+5", "GMT+6", "GMT+7", "GMT+8", "GMT+9" 
+    ,   "GMT+1", "GMT+2", "GMT+3", "GMT+4", "GMT+5", "GMT+6", "GMT+7", "GMT+8", "GMT+9"
     ,   "GMT+11", "GMT+12", "GMT+13", "GMT+14"
     ]
     {
@@ -1276,14 +1276,14 @@ fn make_timezone_menu(
 
         {
             let da = da.clone();
-            let app_info = app_info.clone();    
-            
+            let app_info = app_info.clone();
+
             menu_item_gmt_entry.connect_activate(
                 move |_| {
                     let mut app_info = app_info.borrow_mut();
                     app_info.time_zone = String::from( gmt_entry );
                     da.queue_draw();
-                }  
+                }
             );
         }
 
@@ -1306,20 +1306,20 @@ fn make_timezone_menu(
             {
                 let tz = format!("{}/{}", area, city );
 
-                let menu_item_city = CheckMenuItem::with_label( city );           
+                let menu_item_city = CheckMenuItem::with_label( city );
 
                 menu_item_city.set_active( app_info.borrow().time_zone == tz );
 
                 {
                     let da = da.clone();
-                    let app_info = app_info.clone();    
+                    let app_info = app_info.clone();
                     menu_item_city.connect_activate(
                         move |_| {
                             let mut app_info = app_info.borrow_mut();
                             app_info.time_zone = tz.clone();
                             da.queue_draw();
-                        }  
-                    );                
+                        }
+                    );
                 }
 
                 menu_area.append( &menu_item_city );
@@ -1334,10 +1334,10 @@ fn make_timezone_menu(
     menu
 }
 
-fn make_popup_menu( 
-    app: &Application, 
+fn make_popup_menu(
+    app: &Application,
     window: &ApplicationWindow,
-    da: &DrawingArea, 
+    da: &DrawingArea,
     app_info: &Rc< RefCell< AppInfo > >,
     image_info: &Rc< RefCell< ImageInfo > >,
     logo: Option<Pixbuf>,
@@ -1356,7 +1356,7 @@ fn make_popup_menu(
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_alway_on_top.connect_activate( move |_| 
+        menu_item_pref_alway_on_top.connect_activate( move |_|
             {
                 let mut app_info = app_info.borrow_mut();
                 app_info.always_on_top = !app_info.always_on_top;
@@ -1369,12 +1369,12 @@ fn make_popup_menu(
     let menu_item_pref_lock_pos = gtk::CheckMenuItem::with_label( "Lock Position" );
 
     menu_item_pref_lock_pos.set_active( app_info.borrow().lock_pos );
-    
+
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_lock_pos.connect_activate( move |_| 
+        menu_item_pref_lock_pos.connect_activate( move |_|
             {
                 let mut app_info = app_info.borrow_mut();
                 app_info.lock_pos = !app_info.lock_pos;
@@ -1386,12 +1386,12 @@ fn make_popup_menu(
     let menu_item_pref_show_seconds = gtk::CheckMenuItem::with_label( "Show Seconds" );
 
     menu_item_pref_show_seconds.set_active( app_info.borrow().show_seconds );
-    
+
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_show_seconds.connect_activate( move |_| 
+        menu_item_pref_show_seconds.connect_activate( move |_|
             {
                 let mut app_info = app_info.borrow_mut();
                 app_info.show_seconds = !app_info.show_seconds;
@@ -1399,16 +1399,16 @@ fn make_popup_menu(
             }
         );
     }
-    
+
     let menu_item_pref_enable_sub_second_hand = gtk::CheckMenuItem::with_label( "Enable sub second hand" );
 
     menu_item_pref_enable_sub_second_hand.set_active( app_info.borrow().enable_sub_second_hand );
-    
+
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_enable_sub_second_hand.connect_activate( move |_| 
+        menu_item_pref_enable_sub_second_hand.connect_activate( move |_|
             {
                 let mut app_info = app_info.borrow_mut();
                 app_info.enable_sub_second_hand = !app_info.enable_sub_second_hand;
@@ -1420,12 +1420,12 @@ fn make_popup_menu(
     let menu_item_pref_enable_second_hand_smoothly  = gtk::CheckMenuItem::with_label( "Enable second hand smoothly" );
 
     menu_item_pref_enable_second_hand_smoothly .set_active( app_info.borrow().enable_second_hand_smoothly );
-    
+
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_enable_second_hand_smoothly.connect_activate( move |_| 
+        menu_item_pref_enable_second_hand_smoothly.connect_activate( move |_|
             {
                 let mut app_info = app_info.borrow_mut();
                 app_info.enable_second_hand_smoothly  = !app_info.enable_second_hand_smoothly ;
@@ -1437,12 +1437,12 @@ fn make_popup_menu(
     let menu_item_pref_show_date = gtk::CheckMenuItem::with_label( "Show Date" );
 
     menu_item_pref_show_date.set_active( app_info.borrow().show_date );
-    
+
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_show_date.connect_activate( move |_| 
+        menu_item_pref_show_date.connect_activate( move |_|
             {
                 let mut app_info = app_info.borrow_mut();
                 app_info.show_date = !app_info.show_date;
@@ -1486,7 +1486,7 @@ fn make_popup_menu(
         let window = window.clone();
 
         menu_item_about.connect_activate(
-            move |_| 
+            move |_|
             {
                 let about_dialog = AboutDialog::builder()
                     .title( "title:hello_gtk" )
@@ -1501,8 +1501,8 @@ fn make_popup_menu(
                     .destroy_with_parent( true )
                     .build()
                     ;
-                
-                about_dialog.set_logo( logo.as_ref() );    
+
+                about_dialog.set_logo( logo.as_ref() );
                 about_dialog.set_parent( &window );
                 about_dialog.show_all();
             }
@@ -1524,7 +1524,7 @@ fn make_popup_menu(
     menu.append( &menu_item_pref );
     menu.append( &SeparatorMenuItem::new() );
     menu.append( &menu_item_about );
-    menu.append( &menu_item_quit );    
+    menu.append( &menu_item_quit );
 
     menu
 }
@@ -1534,7 +1534,7 @@ const UPDATE_CYCLE_FAST: u64 = 25;
 
 fn get_timer_interval( is_fast: bool ) -> u64
 {
-    if is_fast { UPDATE_CYCLE_FAST } else { UPDATE_CYCLE_SLOW } 
+    if is_fast { UPDATE_CYCLE_FAST } else { UPDATE_CYCLE_SLOW }
 }
 fn main() {
     pretty_env_logger::init();
@@ -1582,7 +1582,7 @@ fn main() {
             }
         ,   Err( err ) =>
             {
-                match err.kind() 
+                match err.kind()
                 {
                     std::io::ErrorKind::NotFound => { /* pass */ }
                 ,   _ =>
@@ -1626,7 +1626,7 @@ fn main() {
                 let image_info = image_info.clone();
                 let app_info = app_info.clone();
 
-                da.connect_draw( move | da, cr | 
+                da.connect_draw( move | da, cr |
                     {
                         update_region( &window, &image_info.borrow(), &mut app_info.borrow_mut() );
                         draw_watch( &da, cr, &image_info.borrow(), &mut app_info.borrow_mut() );
@@ -1644,7 +1644,7 @@ fn main() {
                 let image_info = image_info.clone();
                 let app_info = app_info.clone();
 
-                window.connect_button_press_event( move | window,  evt | 
+                window.connect_button_press_event( move | window,  evt |
                     {
                         log::debug!("pressed: {:?}", evt.button() );
 
@@ -1671,7 +1671,7 @@ fn main() {
                             }
                         ,   _ => {}
                         }
-                        
+
                         gtk::glib::Propagation::Proceed
                     }
                 );
@@ -1680,7 +1680,7 @@ fn main() {
             {
                 let app_info = app_info.clone();
 
-                window.connect_delete_event( 
+                window.connect_delete_event(
                     move | window, _ |
                     {
                         log::debug!("connect_delete_event" );
@@ -1701,12 +1701,12 @@ fn main() {
                     Some(
                         gtk::glib::source::timeout_add_local(
                             std::time::Duration::from_millis( get_timer_interval( false ) ),
-                            move || 
+                            move ||
                             {
                                 da.queue_draw();
                                 gtk::glib::ControlFlow::Continue
                             }
-                        )            
+                        )
                     )
                 );
             }
