@@ -799,6 +799,10 @@ struct AppInfo
 ,   theme: AppInfoTheme
 ,   theme_custom: Option< String >
 ,   zoom: u32
+,   enable_base_text: bool
+,   text_format_date: Option< String >
+,   text_format_time: Option< String >
+,   text_enable_segment_hour12: bool
 ,   #[serde(skip)]
     zoom_update: bool
 ,   window_pos: Option< ( i32, i32 ) >
@@ -826,6 +830,11 @@ impl AppInfo
         ,   theme: AppInfoTheme::Theme1
         ,   theme_custom: None
         ,   zoom: 100
+        ,   enable_base_text: true
+        ,   text_format_date: None
+        ,   text_format_time: None
+        ,   text_enable_segment_hour12: false
+
         ,   zoom_update: true
         ,   window_pos: None
         ,   time_disp: DateTime::UNIX_EPOCH.naive_utc()
@@ -1032,7 +1041,7 @@ fn draw_watch<'a>(
     }
 
     // render sub_base_text
-    if let Some( x ) = image_info.bytes_base_text.as_ref()
+    if let Some( x ) = image_info.bytes_base_text.as_ref() && app_info.enable_base_text
     {
         // text replace
         static RE_REPLACE: LazyLock<regex::bytes::Regex> = LazyLock::new(
@@ -1078,11 +1087,40 @@ fn draw_watch<'a>(
                 }
                 b"date" =>
                 {
-                    buf.extend_from_slice( app_info.time_disp.format( "%F" /* "%Y-%m-%d" */ ).to_string().as_bytes() );
+                    if app_info.text_format_date.is_some()
+                    {
+                        let df = app_info.time_disp.format( app_info.text_format_date.as_ref().unwrap() );
+
+                        let mut buffer = String::new();
+                        
+                        if let Ok(_) = df.write_to(&mut buffer)
+                        {
+                            buf.extend_from_slice( buffer.as_bytes() );
+                        }
+                    }
+                    else
+                    {
+                        /* "%Y-%m-%d" */
+                        buf.extend_from_slice( app_info.time_disp.format( "%F" ).to_string().as_bytes() );
+                    }
                 }
                 b"time" =>
                 {
-                    buf.extend_from_slice( app_info.time_disp.format( "%r" /* "%H:%M:%S" */ ).to_string().as_bytes() );
+                    if app_info.text_format_time.is_some()
+                    {
+                        let df = app_info.time_disp.format( app_info.text_format_time.as_ref().unwrap() );
+
+                        let mut buffer = String::new();
+
+                        if let Ok(_) = df.write_to(&mut buffer)
+                        {
+                            buf.extend_from_slice( buffer.as_bytes() );
+                        }
+                    }
+                    else
+                    {
+                        buf.extend_from_slice( app_info.time_disp.format( "%r" /* "%H:%M:%S" */ ).to_string().as_bytes() );
+                    }
                 }
                 b"time_hms" =>
                 {
@@ -1092,14 +1130,14 @@ fn draw_watch<'a>(
                 {
                     buf.extend_from_slice( app_info.time_disp.format( "%p" ).to_string().as_bytes() );
                 }
-                _ => 
+                _ =>
                 {
-                    if let Some( x ) = RE_SEGMENT_NUM.captures( kw.as_slice() )
+                    if let Some( caps ) = RE_SEGMENT_NUM.captures( kw.as_slice() )
                     {
                         /*
-                            <g visibilit="{{seg_(hh|hl|mh|ml|sh|sl)([a-g])}}"></g>
+                            <g visibility="{{seg_(hh|hl|mh|ml|sh|sl)([a-g])}}"></g>
                             ex.
-                            <g visibilit="{{seg_hha}}"></g>
+                            <g visibility="{{seg_hha}}"></g>
 
                             {{seg_xxx}} = "visible" or "hidden"
 
@@ -1123,58 +1161,68 @@ fn draw_watch<'a>(
                         let m1 = caps.get(1).unwrap();
                         let m2 = caps.get(2).unwrap();
 
-                        let num = 
+                        let flag_12 = app_info.text_enable_segment_hour12;
+
+                        let num =
                             match m1.as_bytes()
                             {
-                                b"hh" => { app_info.time_disp.hour() / 10 }
-                            ,   b"hl" => { app_info.time_disp.hour() % 10 }
+                                b"hh" => { ( if flag_12 { app_info.time_disp.hour12().1 } else { app_info.time_disp.hour() } ) / 10 }
+                            ,   b"hl" => { ( if flag_12 { app_info.time_disp.hour12().1 } else { app_info.time_disp.hour() } ) % 10 }
                             ,   b"mh" => { app_info.time_disp.minute() / 10 }
                             ,   b"ml" => { app_info.time_disp.minute() % 10 }
                             ,   b"sh" => { app_info.time_disp.second() / 10 }
                             ,   b"sl" => { app_info.time_disp.second() % 10 }
                             ,   _ => { 0 }
                             };
-                        
-                        // num -> seg
+
+                            // num -> seg
                         // https://ja.wikipedia.org/wiki/7%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%83%87%E3%82%A3%E3%82%B9%E3%83%97%E3%83%AC%E3%82%A4#%E6%95%B0%E3%81%8B%E3%82%897%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%82%B3%E3%83%BC%E3%83%89%E3%81%B8%E3%81%AE%E5%A4%89%E6%8F%9B
 
                         let b_on: u8 =
                             match num
                             {
-                                0 => { 0×7e }
-                            ,   1 => { 0×30 }
-                            ,   2 => { 0×6d }
-                            ,   3 => { 0×79 }
-                            ,   4 => { 0×33 }
-                            ,   5 => { 0×5b }
-                            ,   6 => { 0×5f }
-                            ,   7 => { 0×70 }
-                            ,   8 => { 0×7f }
-                            ,   9 => { 0×7b }
-                            ,   _ => { 0 }
+                                0 => { 0x7E }
+                            ,   1 => { 0x30 }
+                            ,   2 => { 0x6d }
+                            ,   3 => { 0x79 }
+                            ,   4 => { 0x33 }
+                            ,   5 => { 0x5b }
+                            ,   6 => { 0x5f }
+                            ,   7 => { 0x70 }
+                            ,   8 => { 0x7f }
+                            ,   9 => { 0x7b }
+                            ,   _ => { 0x00 }
                             };
-                            
-                        let b_mask =
+
+                        let b_mask: u8 =
                             match m2.as_bytes()
                             {
-                                b"a" => { 0x1u8 }
-                            ,   b"b" => { 0x1u8 << 2 }
-                            ,   b"c" => { 0x1u8 << 3 }
-                            ,   b"d" => { 0x1u8 << 4 }
-                            ,   b"e" => { 0x1u8 << 5 }
-                            ,   b"f" => { 0x1u8 << 6 }
-                            ,   b"g" => { 0x1u8 << 7 }
+                                b"a" => { 0x1 }
+                            ,   b"b" => { 0x1 << 2 }
+                            ,   b"c" => { 0x1 << 3 }
+                            ,   b"d" => { 0x1 << 4 }
+                            ,   b"e" => { 0x1 << 5 }
+                            ,   b"f" => { 0x1 << 6 }
+                            ,   b"g" => { 0x1 << 7 }
                             ,   _ => { 0x0u8 }
                             };
 
-                        let is_am = app_info.time_disp.hour() >= 12;
-
+                        buf.extend_from_slice(
+                            if b_on & b_mask != 0x00
+                            {
+                                b"visible"
+                            }
+                            else
+                            {
+                                b"hidden"
+                            }
+                        );
                     }
-                    else if let Some( x ) = RE_SEGMENT_AMPM.captures( kw.as_slice() )
+                    else if let Some( caps ) = RE_SEGMENT_AMPM.captures( kw.as_slice() )
                     {
                         /*
-                            <g visibilit="{{seg_am}}"></g>
-                            <g visibilit="{{seg_pm}}"></g>
+                            <g visibility="{{seg_am}}"></g>
+                            <g visibility="{{seg_pm}}"></g>
 
                             {{seg_am}}, {{seg_pm}} = "visible" or "hidden"
                         */
@@ -1182,8 +1230,8 @@ fn draw_watch<'a>(
                         let is_am = app_info.time_disp.hour() >= 12;
 
                         let m1 = caps.get(1).unwrap();
-                        
-                        buf.extend_from_slice( 
+
+                        buf.extend_from_slice(
                             if      is_am && m1.as_bytes() == b"am"
                                 ||  !is_am && m1.as_bytes() == b"pm"
                             {
@@ -1195,7 +1243,7 @@ fn draw_watch<'a>(
                             }
                         );
                     }
-                    else 
+                    else
                     {
                         buf.extend_from_slice( m0.as_bytes() );
                     }

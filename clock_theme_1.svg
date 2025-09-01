@@ -151,7 +151,7 @@
          sodipodi:role="line"
          style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:5.64444px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
          id="tspan2079">{{time}}</tspan></text>
-    <text visibility="hidden"
+    <text
        xml:space="preserve"
        style="font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';display:inline;fill:#ffff00;stroke:none;stroke-width:0.529167;stroke-linecap:round"
        y="28.457558"
