@@ -620,6 +620,10 @@ fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
         ret.bytes_base = Some(src_xml);
     }
 
+    if let Ok(src_xml) = src_base_text {
+        ret.bytes_base_text = Some(src_xml);
+    }
+
     if let Ok(src_xml) = src_long_handle {
         ret.svgh_long_handle = fn_make_svg_handle( &src_xml );
         ret.bytes_long_handle = Some(src_xml);
@@ -1021,26 +1025,100 @@ fn draw_watch<'a>(
     let angle_sec_delta = if app_info.enable_second_hand_smoothly { time_now.timestamp_subsec_millis() as f64 / 1000.0 } else { 0.0 };
     let angle_sec = ( time_now.second() as f64 + angle_sec_delta ) / 60.0 * 360.0;
 
+    // render base
     if let Some( x ) = image_info.svgh_base.as_ref()
     {
         let svg_renderer = rsvg::CairoRenderer::new(x);
         svg_renderer.render_document(cctx, &viewport).unwrap();
     }
 
+    // render sub_base_text
+    if let Some( x ) = image_info.bytes_base_text.as_ref()
+    {
+        // text replace
+        static RE_REPLACE: LazyLock<regex::bytes::Regex> = LazyLock::new(
+            ||
+            {
+                regex::bytes::Regex::new(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}").unwrap()
+            }
+        );
+
+        let mut buf: Vec<u8> = Vec::new();
+        let mut last_match = 0;
+
+        for caps in RE_REPLACE.captures_iter( x )
+        {
+            let m0 = caps.get(0).unwrap();
+            let m1 = caps.get(1).unwrap();
+
+            buf.extend_from_slice( &x[last_match..m0.start()] );
+
+            match m1.as_bytes().to_ascii_lowercase().as_slice()
+            {
+                /* https://docs.rs/chrono/latest/chrono/format/strftime/index.html */
+
+                b"time_zone" =>
+                {
+                    buf.extend_from_slice( app_info.time_zone.as_bytes() );
+                }
+                b"date" =>
+                {
+                    buf.extend_from_slice( app_info.time_disp.format( "%F" /* "%Y-%m-%d" */ ).to_string().as_bytes() );
+                }
+                b"time" =>
+                {
+                    buf.extend_from_slice( app_info.time_disp.format( "%r" /* "%H:%M:%S" */ ).to_string().as_bytes() );
+                }
+                b"time_hms" =>
+                {
+                    buf.extend_from_slice( app_info.time_disp.format( "%H:%M:%S" ).to_string().as_bytes() );
+                }
+                b"time_ampm" =>
+                {
+                    buf.extend_from_slice( app_info.time_disp.format( "%p" ).to_string().as_bytes() );
+                }
+                _ => {
+                    buf.extend_from_slice( m0.as_bytes() );
+                }
+            }
+
+            last_match = m0.end();
+        }
+        buf.extend_from_slice( &x[last_match..] );
+
+        // render
+        let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &buf ));
+
+        if let Ok( svgh ) =
+            rsvg::Loader::new()
+            .read_stream(
+                &svg_stream,
+                None::<&gtk::gio::File>,
+                None::<&gtk::gio::Cancellable>,
+            )
+        {
+            let svg_renderer = rsvg::CairoRenderer::new( &svgh );
+            svg_renderer.render_document(cctx, &viewport).unwrap();
+        }
+    }
+
+    // render sub_second
     if app_info.show_seconds && app_info.enable_sub_second_hand
     {
-
+        // render sub_second_base
         if let Some( x ) = image_info.svgh_sub_second_base.as_ref()
         {
             let svg_renderer = rsvg::CairoRenderer::new(x);
             svg_renderer.render_document(cctx, &viewport).unwrap();
         }
 
+        // render sub_second_handle
         if let Some( x ) = image_info.svgh_sub_second_handle.as_ref()
         {
             func_render_rotate( x, &center_sub_second, angle_sec );
         }
 
+        // render sub_second_center_circle
         if let Some( x ) = image_info.svgh_sub_second_center_circle.as_ref()
         {
             if ENABLE_ROTATE_CENTER_CIRCLE
@@ -1054,16 +1132,19 @@ fn draw_watch<'a>(
         }
     }
 
+    // render long_handle
     if let Some( x ) = image_info.svgh_long_handle.as_ref()
     {
         func_render_rotate( x, &center, angle_min );
     }
 
+    // render short_handle
     if let Some( x ) = image_info.svgh_short_handle.as_ref()
     {
         func_render_rotate( x, &center, angle_hour );
     }
 
+    // render second_handle
     if app_info.show_seconds && !app_info.enable_sub_second_hand
     {
         if let Some( x ) = image_info.svgh_second_handle.as_ref()
@@ -1072,6 +1153,7 @@ fn draw_watch<'a>(
         }
     }
 
+    // render center_circle
     if let Some( x ) = image_info.svgh_center_circle.as_ref()
     {
         if ENABLE_ROTATE_CENTER_CIRCLE

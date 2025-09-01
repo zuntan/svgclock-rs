@@ -134,37 +134,33 @@
     <text
        xml:space="preserve"
        style="font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';display:inline;fill:#00ff00;stroke:none;stroke-width:0.529167;stroke-linecap:round"
-       x="22.052429"
        y="16.203108"
-       id="text480-3"><tspan
+       id="text480-3"
+       x="50%"
+       text-anchor="middle"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke:none;stroke-width:0.529167"
-         x="22.052429"
-         y="16.203108"
-         id="tspan572">{time_zone}</tspan></text>
+         id="tspan572">{{time_zone}}</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;display:inline;fill:#ffff00;stroke:none;stroke-width:0.529167;stroke-linecap:round"
-       x="50%"
        y="55.151127"
        id="text480-3-5-1"
+       x="50%"
        text-anchor="middle"><tspan
          sodipodi:role="line"
-         id="tspan2079"
-         x="50%"
-         y="55.151127"
-         style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:5.64444px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">{time_dig}</tspan></text>
+         style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:5.64444px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         id="tspan2079">{{time}}</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';display:inline;fill:#ffff00;stroke:none;stroke-width:0.529167;stroke-linecap:round"
-       x="23.829185"
        y="28.457558"
-       id="text480-3-5"><tspan
+       id="text480-3-5"
+       x="50%"
+       text-anchor="middle"><tspan
          sodipodi:role="line"
          style="fill:#ffff00;stroke:none;stroke-width:0.529167"
-         x="23.829185"
-         y="28.457558"
-         id="tspan572-3">{date}</tspan></text>
+         id="tspan572-3">{{date}}</tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"
