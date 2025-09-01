@@ -990,24 +990,26 @@ fn draw_watch<'a>(
 
         let is_fast = app_info.time_disp_st.is_some();
 
-        let _da = da.clone();
-
-        let old_timer_sourceid = app_info.timer_sourceid.replace(
-            Some(
-                gtk::glib::source::timeout_add_local(
-                    std::time::Duration::from_millis( get_timer_interval( is_fast ) ),
-                    move || 
-                    {
-                        _da.queue_draw();
-                        gtk::glib::ControlFlow::Continue
-                    }
-                )            
-            )
-        );
-
-        if let Some( sourceid ) = old_timer_sourceid
         {
-            sourceid.remove();
+            let da = da.clone();
+
+            let old_timer_sourceid = app_info.timer_sourceid.replace(
+                Some(
+                    gtk::glib::source::timeout_add_local(
+                        std::time::Duration::from_millis( get_timer_interval( is_fast ) ),
+                        move || 
+                        {
+                            da.queue_draw();
+                            gtk::glib::ControlFlow::Continue
+                        }
+                    )            
+                )
+            );
+
+            if let Some( sourceid ) = old_timer_sourceid
+            {
+                sourceid.remove();
+            }
         }
     }
 
@@ -1085,7 +1087,7 @@ fn draw_watch<'a>(
 }
 
 fn make_theme_menu(
-    _win: &ApplicationWindow, 
+    window: &ApplicationWindow, 
     da: &DrawingArea, 
     image_info: &Rc< RefCell< ImageInfo > >,
     app_info: &Rc< RefCell< AppInfo > >    
@@ -1099,20 +1101,21 @@ fn make_theme_menu(
 
         menu_item.set_active( ait == app_info.borrow().theme );
 
-        let _da = da.clone();
-        let _app_info = app_info.clone();    
-        let _image_info = image_info.clone();
+        {
+            let app_info = app_info.clone();    
+            let image_info = image_info.clone();
 
-        menu_item.connect_activate(
-            move |_| 
-            {
-                let mut _app_info = _app_info.borrow_mut();
-                _app_info.theme = ait;
-                _app_info.zoom = 100;
-                _app_info.zoom_update = true;
-                _image_info.replace( load_theme( _app_info.theme, _app_info.theme_custome.clone() ).unwrap() );
-            }  
-        );
+            menu_item.connect_activate(
+                move |_| 
+                {
+                    let mut app_info = app_info.borrow_mut();
+                    app_info.theme = ait;
+                    app_info.zoom = 100;
+                    app_info.zoom_update = true;
+                    image_info.replace( load_theme( app_info.theme, app_info.theme_custome.clone() ).unwrap() );
+                }  
+            );
+        }
 
         if ait == AppInfoTheme::Custom
         {
@@ -1137,9 +1140,9 @@ fn make_zoom_menu(
         }
     );
 
-    let _zoom = app_info.borrow().zoom;
+    let zoom = app_info.borrow().zoom;
 
-    if ZOOMS.iter().find( | &&x| { x == _zoom } ).is_none()
+    if ZOOMS.iter().find( | &&x| { x == zoom } ).is_none()
     {
         app_info.borrow_mut().zoom = 100;
     }
@@ -1154,15 +1157,17 @@ fn make_zoom_menu(
 
         menu_item.set_active( app_info.borrow().zoom == x );
 
-        let _da = da.clone();
-        let _app_info = app_info.clone();    
-        menu_item.connect_activate(
-            move |_| {
-                let mut _app_info = _app_info.borrow_mut();
-                _app_info.zoom = x;
-                _app_info.zoom_update = true;
-            }  
-        );
+        {
+            let app_info = app_info.clone();    
+
+            menu_item.connect_activate(
+                move |_| {
+                    let mut app_info = app_info.borrow_mut();
+                    app_info.zoom = x;
+                    app_info.zoom_update = true;
+                }  
+            );
+        }
 
         menu.append( &menu_item );
     }
@@ -1218,16 +1223,19 @@ fn make_timezone_menu(
 
     menu_item_local_time.set_active( app_info.borrow().time_zone == "" );
     
-    let _da = da.clone();
-    let _app_info = app_info.clone();    
-    menu_item_local_time.connect_activate(
-        move |_| {
-            let mut _app_info = _app_info.borrow_mut();
-            _app_info.time_zone = String::from( "" );
-            _app_info.time_disp_st = None;
-            _da.queue_draw();
-        }  
-    );
+    {    
+        let da = da.clone();
+        let app_info = app_info.clone();    
+
+        menu_item_local_time.connect_activate(
+            move |_| {
+                let mut app_info = app_info.borrow_mut();
+                app_info.time_zone = String::from( "" );
+                app_info.time_disp_st = None;
+                da.queue_draw();
+            }  
+        );
+    }
 
     menu.append( &menu_item_local_time );
 
@@ -1235,15 +1243,18 @@ fn make_timezone_menu(
 
     menu_item_utc.set_active( app_info.borrow().time_zone == "UTC" );
     
-    let _da = da.clone();
-    let _app_info = app_info.clone();    
-    menu_item_utc.connect_activate(
-        move |_| {
-            let mut _app_info = _app_info.borrow_mut();
-            _app_info.time_zone = String::from( "UTC" );
-            _da.queue_draw();
-        }  
-    );
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();    
+        
+        menu_item_utc.connect_activate(
+            move |_| {
+                let mut app_info = app_info.borrow_mut();
+                app_info.time_zone = String::from( "UTC" );
+                da.queue_draw();
+            }  
+        );
+    }
 
     menu.append( &menu_item_utc );
 
@@ -1263,15 +1274,18 @@ fn make_timezone_menu(
 
         menu_item_gmt_entry.set_active( app_info.borrow().time_zone == gmt_entry );
 
-        let _da = da.clone();
-        let _app_info = app_info.clone();    
-        menu_item_gmt_entry.connect_activate(
-            move |_| {
-                let mut _app_info = _app_info.borrow_mut();
-                _app_info.time_zone = String::from( gmt_entry );
-                _da.queue_draw();
-            }  
-        );
+        {
+            let da = da.clone();
+            let app_info = app_info.clone();    
+            
+            menu_item_gmt_entry.connect_activate(
+                move |_| {
+                    let mut app_info = app_info.borrow_mut();
+                    app_info.time_zone = String::from( gmt_entry );
+                    da.queue_draw();
+                }  
+            );
+        }
 
         menu_gmt.append( &menu_item_gmt_entry );
     }
@@ -1296,15 +1310,17 @@ fn make_timezone_menu(
 
                 menu_item_city.set_active( app_info.borrow().time_zone == tz );
 
-                let _da = da.clone();
-                let _app_info = app_info.clone();    
-                menu_item_city.connect_activate(
-                    move |_| {
-                        let mut _app_info = _app_info.borrow_mut();
-                        _app_info.time_zone = tz.clone();
-                        _da.queue_draw();
-                    }  
-                );                
+                {
+                    let da = da.clone();
+                    let app_info = app_info.clone();    
+                    menu_item_city.connect_activate(
+                        move |_| {
+                            let mut app_info = app_info.borrow_mut();
+                            app_info.time_zone = tz.clone();
+                            da.queue_draw();
+                        }  
+                    );                
+                }
 
                 menu_area.append( &menu_item_city );
             }
@@ -1320,7 +1336,7 @@ fn make_timezone_menu(
 
 fn make_popup_menu( 
     app: &Application, 
-    win: &ApplicationWindow,
+    window: &ApplicationWindow,
     da: &DrawingArea, 
     app_info: &Rc< RefCell< AppInfo > >,
     image_info: &Rc< RefCell< ImageInfo > >,
@@ -1335,93 +1351,105 @@ fn make_popup_menu(
 
     menu_item_pref_alway_on_top.set_active( app_info.borrow().always_on_top );
 
-    let _win = win.clone();
-    let _da = da.clone();
-    let _app_info = app_info.clone();
+    {
+        let window = window.clone();
+        let da = da.clone();
+        let app_info = app_info.clone();
 
-    menu_item_pref_alway_on_top.connect_activate( move |_| 
-        {
-            let mut _app_info = _app_info.borrow_mut();
-            _app_info.always_on_top = !_app_info.always_on_top;
-            _win.set_keep_above( _app_info.always_on_top );
-            _da.queue_draw();
-        }
-    );
+        menu_item_pref_alway_on_top.connect_activate( move |_| 
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.always_on_top = !app_info.always_on_top;
+                window.set_keep_above( app_info.always_on_top );
+                da.queue_draw();
+            }
+        );
+    }
 
     let menu_item_pref_lock_pos = gtk::CheckMenuItem::with_label( "Lock Position" );
 
     menu_item_pref_lock_pos.set_active( app_info.borrow().lock_pos );
     
-    let _da = da.clone();
-    let _app_info = app_info.clone();
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
 
-    menu_item_pref_lock_pos.connect_activate( move |_| 
-        {
-            let mut _app_info = _app_info.borrow_mut();
-            _app_info.lock_pos = !_app_info.lock_pos;
-            _da.queue_draw();
-        }
-    );
+        menu_item_pref_lock_pos.connect_activate( move |_| 
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.lock_pos = !app_info.lock_pos;
+                da.queue_draw();
+            }
+        );
+    }
 
     let menu_item_pref_show_seconds = gtk::CheckMenuItem::with_label( "Show Seconds" );
 
     menu_item_pref_show_seconds.set_active( app_info.borrow().show_seconds );
     
-    let _da = da.clone();
-    let _app_info = app_info.clone();
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
 
-    menu_item_pref_show_seconds.connect_activate( move |_| 
-        {
-            let mut _app_info = _app_info.borrow_mut();
-            _app_info.show_seconds = !_app_info.show_seconds;
-            _da.queue_draw();
-        }
-    );
+        menu_item_pref_show_seconds.connect_activate( move |_| 
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.show_seconds = !app_info.show_seconds;
+                da.queue_draw();
+            }
+        );
+    }
     
     let menu_item_pref_enable_sub_second_hand = gtk::CheckMenuItem::with_label( "Enable sub second hand" );
 
     menu_item_pref_enable_sub_second_hand.set_active( app_info.borrow().enable_sub_second_hand );
     
-    let _da = da.clone();
-    let _app_info = app_info.clone();
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
 
-    menu_item_pref_enable_sub_second_hand.connect_activate( move |_| 
-        {
-            let mut _app_info = _app_info.borrow_mut();
-            _app_info.enable_sub_second_hand = !_app_info.enable_sub_second_hand;
-            _da.queue_draw();
-        }
-    );
+        menu_item_pref_enable_sub_second_hand.connect_activate( move |_| 
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.enable_sub_second_hand = !app_info.enable_sub_second_hand;
+                da.queue_draw();
+            }
+        );
+    }
 
     let menu_item_pref_enable_second_hand_smoothly  = gtk::CheckMenuItem::with_label( "Enable second hand smoothly" );
 
     menu_item_pref_enable_second_hand_smoothly .set_active( app_info.borrow().enable_second_hand_smoothly );
     
-    let _da = da.clone();
-    let _app_info = app_info.clone();
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
 
-    menu_item_pref_enable_second_hand_smoothly .connect_activate( move |_| 
-        {
-            let mut _app_info = _app_info.borrow_mut();
-            _app_info.enable_second_hand_smoothly  = !_app_info.enable_second_hand_smoothly ;
-            _da.queue_draw();
-        }
-    );
+        menu_item_pref_enable_second_hand_smoothly.connect_activate( move |_| 
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.enable_second_hand_smoothly  = !app_info.enable_second_hand_smoothly ;
+                da.queue_draw();
+            }
+        );
+    }
 
     let menu_item_pref_show_date = gtk::CheckMenuItem::with_label( "Show Date" );
 
     menu_item_pref_show_date.set_active( app_info.borrow().show_date );
     
-    let _da = da.clone();
-    let _app_info = app_info.clone();
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
 
-    menu_item_pref_show_date.connect_activate( move |_| 
-        {
-            let mut _app_info = _app_info.borrow_mut();
-            _app_info.show_date = !_app_info.show_date;
-            _da.queue_draw();
-        }
-    );
+        menu_item_pref_show_date.connect_activate( move |_| 
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.show_date = !app_info.show_date;
+                da.queue_draw();
+            }
+        );
+    }
 
     let menu_item_pref_time_zone = MenuItem::with_label( "Time Zone" );
     let menu_item_pref_theme = MenuItem::with_label( "Theme" );
@@ -1446,7 +1474,7 @@ fn make_popup_menu(
     let menu_pref_time_zone = make_timezone_menu( &da.clone(), &app_info.clone() );
     menu_item_pref_time_zone.set_submenu( Some( &menu_pref_time_zone ) );
 
-    let menu_pref_theme = make_theme_menu( &win.clone(), &da.clone(), &image_info.clone(), &app_info.clone() );
+    let menu_pref_theme = make_theme_menu( &window.clone(), &da.clone(), &image_info.clone(), &app_info.clone() );
     menu_item_pref_theme.set_submenu( Some( &menu_pref_theme ) );
 
     let menu_pref_zoom = make_zoom_menu( &da.clone(), &app_info.clone() );
@@ -1454,43 +1482,44 @@ fn make_popup_menu(
 
     let menu_item_about = MenuItem::with_label( "About" );
 
-    let _win = win.clone();
-    let _image_info = image_info.clone();
+    {
+        let window = window.clone();
 
-    menu_item_about.connect_activate(
-        move |_| 
-        {
-            let about_dialog = AboutDialog::builder()
-                .title( "title:hello_gtk" )
-                .program_name( "hello_gtk" )
-                .comments( "hello_gtk is a analogue clock." )
-                .copyright( "Copyright © 2025 zuntan <>" )
-                .version( "version" )
-                .website( "https://github.com/zuntan/" )
-                .authors( [ "authors:zuntan", ] )
-                .artists( [ "artists:zuntan", ] )
-                .modal( true )
-                .destroy_with_parent( true )
-                .build()
-                ;
-            
-            about_dialog.set_logo( logo.as_ref() );    
-            about_dialog.set_parent( &_win );
-            about_dialog.show_all();
-        }
-    );
+        menu_item_about.connect_activate(
+            move |_| 
+            {
+                let about_dialog = AboutDialog::builder()
+                    .title( "title:hello_gtk" )
+                    .program_name( "hello_gtk" )
+                    .comments( "hello_gtk is a analogue clock." )
+                    .copyright( "Copyright © 2025 zuntan <>" )
+                    .version( "version" )
+                    .website( "https://github.com/zuntan/" )
+                    .authors( [ "authors:zuntan", ] )
+                    .artists( [ "artists:zuntan", ] )
+                    .modal( true )
+                    .destroy_with_parent( true )
+                    .build()
+                    ;
+                
+                about_dialog.set_logo( logo.as_ref() );    
+                about_dialog.set_parent( &window );
+                about_dialog.show_all();
+            }
+        );
+    }
 
     let menu_item_quit = MenuItem::with_label( "Quit");
 
-    let _app = app.clone();
-    let _win = win.clone();
+    {
+        let window = window.clone();
 
-    menu_item_quit.connect_activate(
-        move |_| {
-            //_app.quit();
-            _win.close();
-        }
-    );
+        menu_item_quit.connect_activate(
+            move |_| {
+                window.close();
+            }
+        );
+    }
 
     menu.append( &menu_item_pref );
     menu.append( &SeparatorMenuItem::new() );
@@ -1568,147 +1597,155 @@ fn main() {
     // after setup
     app_info.borrow_mut().reset();
 
-    let _app_info = app_info.clone();
+    {
+        let app_info = app_info.clone();
 
-    app.connect_activate(move |app| {
+        app.connect_activate(move |app| {
 
-        let image_info = Rc::new( RefCell::new( load_theme( _app_info.borrow().theme, _app_info.borrow().theme_custome.clone()  ).unwrap() ) );
+            let image_info = Rc::new( RefCell::new( load_theme( app_info.borrow().theme, app_info.borrow().theme_custome.clone()  ).unwrap() ) );
 
-        let window = ApplicationWindow::builder()
-            .application(app)
-            .title("net.zuntan.example")
-            .decorated(false)
-            .tooltip_markup("example")
-/* 
-            .default_width(image_info.sz.x)
-            .default_height(image_info.sz.y)
-*/
-            .build();
+            let window = ApplicationWindow::builder()
+                .application(app)
+                .title("net.zuntan.example")
+                .decorated(false)
+                .tooltip_markup("example")
+                .build();
 
-        window.set_keep_above( _app_info.borrow().always_on_top );
+            window.set_keep_above( app_info.borrow().always_on_top );
 
-        if let Some( pos ) = _app_info.borrow().window_pos
-        {
-            window.move_( pos.0, pos.1 );
-        }
-
-        let da =  DrawingArea::new();
-
-        let _da = da.clone();
-        let _window = window.clone();
-        let _image_info = image_info.clone();
-        let __app_info = _app_info.clone();
-
-        da.connect_draw( move | _, cr | 
+            if let Some( pos ) = app_info.borrow().window_pos
             {
-                update_region( &_window, &_image_info.borrow(), &mut __app_info.borrow_mut() );
-                draw_watch( &_da, cr, &_image_info.borrow(), &mut __app_info.borrow_mut() );
-                gtk::glib::Propagation::Proceed
+                window.move_( pos.0, pos.1 );
             }
-        );
 
-        window.add(&da);
+            let da =  DrawingArea::new();
 
-        let _app = app.clone();
-        let _window = window.clone();
-        let _da = da.clone();
-        let _image_info = image_info.clone();
-        let __app_info = _app_info.clone();
-
-        window.connect_button_press_event( move | window,  evt | 
             {
-                log::debug!("pressed: {:?}", evt.button() );
+                let da = da.clone();
+                let window = window.clone();
+                let image_info = image_info.clone();
+                let app_info = app_info.clone();
 
-                let logo = load_logo();
-
-                match evt.button()
-                {
-                    1 => /* left button */
+                da.connect_draw( move | da, cr | 
                     {
-                        if !__app_info.borrow().lock_pos
+                        update_region( &window, &image_info.borrow(), &mut app_info.borrow_mut() );
+                        draw_watch( &da, cr, &image_info.borrow(), &mut app_info.borrow_mut() );
+                        gtk::glib::Propagation::Proceed
+                    }
+                );
+            }
+
+            window.add(&da);
+
+            {
+                let app = app.clone();
+                let window = window.clone();
+                let da = da.clone();
+                let image_info = image_info.clone();
+                let app_info = app_info.clone();
+
+                window.connect_button_press_event( move | window,  evt | 
+                    {
+                        log::debug!("pressed: {:?}", evt.button() );
+
+                        let logo = load_logo();
+
+                        match evt.button()
                         {
-                            let btn = evt.as_ref();
-                            window.begin_move_drag( btn.button as i32, btn.x_root as i32, btn.y_root as i32, btn.time );
+                            1 => /* left button */
+                            {
+                                if !app_info.borrow().lock_pos
+                                {
+                                    let btn = evt.as_ref();
+                                    window.begin_move_drag( btn.button as i32, btn.x_root as i32, btn.y_root as i32, btn.time );
+                                }
+                            }
+                        ,   3 => /* right button */
+                            {
+                                let menu = make_popup_menu( &app, &window, &da, &app_info, &image_info, logo );
+
+                                menu.show_all();
+                                menu.popup_at_pointer( Some( evt ) );
+
+                                return gtk::glib::Propagation::Stop;
+                            }
+                        ,   _ => {}
                         }
+                        
+                        gtk::glib::Propagation::Proceed
                     }
-                ,   3 => /* right button */
-                    {
-                        let menu = make_popup_menu( &_app, &_window, &_da, &__app_info, &_image_info, logo );
-
-                        menu.show_all();
-                        menu.popup_at_pointer( Some( evt ) );
-
-                        return gtk::glib::Propagation::Stop;
-                    }
-                ,   _ => {}
-                }
-                
-                gtk::glib::Propagation::Proceed
+                );
             }
-        );
 
-        let __app_info = _app_info.clone();
-
-        window.connect_delete_event( 
-            move | win, _ |
             {
-                log::debug!("connect_delete_event" );
-                log::debug!("pos:{:?}", win.position() );
-                __app_info.borrow_mut().window_pos = Some( win.position() );
-                gtk::glib::Propagation::Proceed
-            }
-        );
+                let app_info = app_info.clone();
 
-        window.show_all();
-
-        let _da = da.clone();
-
-        _app_info.borrow_mut().timer_sourceid.replace(
-            Some(
-                gtk::glib::source::timeout_add_local(
-                    std::time::Duration::from_millis( get_timer_interval( false ) ),
-                    move || 
+                window.connect_delete_event( 
+                    move | window, _ |
                     {
-                        _da.queue_draw();
-                        gtk::glib::ControlFlow::Continue
+                        log::debug!("connect_delete_event" );
+                        log::debug!("pos:{:?}", window.position() );
+                        app_info.borrow_mut().window_pos = Some( window.position() );
+                        gtk::glib::Propagation::Proceed
                     }
-                )            
-            )
-        );
-    });
+                );
+            }
 
-    let _app_info = app_info.clone();
+            window.show_all();
 
-    app.connect_shutdown(
-        move | _ |
-        {
-            debug!("connect_shutdown");
-
-            let toml_str = toml::to_string( _app_info.as_ref() ).unwrap();
-            let toml_str = format!( "#TOML\n\n{}", toml_str );
-
-            let file = File::create(app_info_file );
-
-            match file
             {
-                Ok( mut file ) =>
+                let da = da.clone();
+                let app_info = app_info.clone();
+
+                app_info.borrow_mut().timer_sourceid.replace(
+                    Some(
+                        gtk::glib::source::timeout_add_local(
+                            std::time::Duration::from_millis( get_timer_interval( false ) ),
+                            move || 
+                            {
+                                da.queue_draw();
+                                gtk::glib::ControlFlow::Continue
+                            }
+                        )            
+                    )
+                );
+            }
+        });
+    }
+
+    {
+        let toml_str = toml::to_string( app_info.as_ref() ).unwrap();
+        let toml_str = format!( "#TOML\n\n{}", toml_str );
+
+        app.connect_shutdown(
+            move | _ |
+            {
+                debug!("connect_shutdown");
+
+                let file = File::create(app_info_file );
+
+                match file
                 {
-                    match file.write( toml_str.as_bytes() )
+                    Ok( mut file ) =>
                     {
-                        Ok(_) => {}
-                    ,   Err(err) =>
+                        match file.write( toml_str.as_bytes() )
                         {
-                            error!( "{}", err );
+                            Ok(_) => {}
+                        ,   Err(err) =>
+                            {
+                                error!( "{}", err );
+                            }
                         }
+                    },
+                    Err( err ) =>
+                    {
+                        error!( "{}", err );
                     }
-                },
-                Err( err ) =>
-                {
-                    error!( "{}", err );
                 }
             }
-        }
-    );
+        );
+    }
 
     app.run();
+
 }
