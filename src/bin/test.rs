@@ -165,4 +165,8 @@ fn main()
     println!("{:?}", mat == DAffine2::IDENTITY );
     
 
+
+    println!("{:?}", chrono::Local::now() );
+    println!("{:?}", chrono_tz::Asia::Tokyo );
+
 }

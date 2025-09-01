@@ -2,7 +2,6 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-
 /* use std::sync::{Arc, Mutex}; */
 
 use std::fs::File;
@@ -1039,7 +1038,21 @@ fn draw_watch<'a>(
         static RE_REPLACE: LazyLock<regex::bytes::Regex> = LazyLock::new(
             ||
             {
-                regex::bytes::Regex::new(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}").unwrap()
+                regex::bytes::Regex::new(r"(?i)\{\{\s*([A-Za-z0-9_]+)\s*\}\}").unwrap()
+            }
+        );
+
+        static RE_SEGMENT_NUM: LazyLock<regex::bytes::Regex> = LazyLock::new(
+            ||
+            {
+                regex::bytes::Regex::new(r"(?i)seg_(hh|hl|mh|ml|sh|sl)([a-g])").unwrap()
+            }
+        );
+
+        static RE_SEGMENT_AMPM: LazyLock<regex::bytes::Regex> = LazyLock::new(
+            ||
+            {
+                regex::bytes::Regex::new(r"(?i)seg_(am|pm)").unwrap()
             }
         );
 
@@ -1053,7 +1066,9 @@ fn draw_watch<'a>(
 
             buf.extend_from_slice( &x[last_match..m0.start()] );
 
-            match m1.as_bytes().to_ascii_lowercase().as_slice()
+            let kw = m1.as_bytes().to_ascii_lowercase();
+
+            match kw.as_slice()
             {
                 /* https://docs.rs/chrono/latest/chrono/format/strftime/index.html */
 
@@ -1077,13 +1092,119 @@ fn draw_watch<'a>(
                 {
                     buf.extend_from_slice( app_info.time_disp.format( "%p" ).to_string().as_bytes() );
                 }
-                _ => {
-                    buf.extend_from_slice( m0.as_bytes() );
+                _ => 
+                {
+                    if let Some( x ) = RE_SEGMENT_NUM.captures( kw.as_slice() )
+                    {
+                        /*
+                            <g visibilit="{{seg_(hh|hl|mh|ml|sh|sl)([a-g])}}"></g>
+                            ex.
+                            <g visibilit="{{seg_hha}}"></g>
+
+                            {{seg_xxx}} = "visible" or "hidden"
+
+                            $1 = (hh|hl|mh|ml|sh|sl)
+                                hh -> Hour High digit
+                                hl -> Hour Low digit
+                                mh -> Minute High digit
+                                ml -> Minute Low digit
+                                sh -> Second High digit
+                                sl -> Second Low digit
+
+                            $2 = a,b,c,d,e,f,g
+                                segment https://en.wikipedia.org/wiki/Seven-segment_display#/media/File:7_Segment_Display_with_Labeled_Segments.svg
+                                   =a=
+                                |f|   |b|
+                                   =g=
+                                |e|   |c|
+                                   =d=
+                        */
+
+                        let m1 = caps.get(1).unwrap();
+                        let m2 = caps.get(2).unwrap();
+
+                        let num = 
+                            match m1.as_bytes()
+                            {
+                                b"hh" => { app_info.time_disp.hour() / 10 }
+                            ,   b"hl" => { app_info.time_disp.hour() % 10 }
+                            ,   b"mh" => { app_info.time_disp.minute() / 10 }
+                            ,   b"ml" => { app_info.time_disp.minute() % 10 }
+                            ,   b"sh" => { app_info.time_disp.second() / 10 }
+                            ,   b"sl" => { app_info.time_disp.second() % 10 }
+                            ,   _ => { 0 }
+                            };
+                        
+                        // num -> seg
+                        // https://ja.wikipedia.org/wiki/7%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%83%87%E3%82%A3%E3%82%B9%E3%83%97%E3%83%AC%E3%82%A4#%E6%95%B0%E3%81%8B%E3%82%897%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%82%B3%E3%83%BC%E3%83%89%E3%81%B8%E3%81%AE%E5%A4%89%E6%8F%9B
+
+                        let b_on: u8 =
+                            match num
+                            {
+                                0 => { 0×7e }
+                            ,   1 => { 0×30 }
+                            ,   2 => { 0×6d }
+                            ,   3 => { 0×79 }
+                            ,   4 => { 0×33 }
+                            ,   5 => { 0×5b }
+                            ,   6 => { 0×5f }
+                            ,   7 => { 0×70 }
+                            ,   8 => { 0×7f }
+                            ,   9 => { 0×7b }
+                            ,   _ => { 0 }
+                            };
+                            
+                        let b_mask =
+                            match m2.as_bytes()
+                            {
+                                b"a" => { 0x1u8 }
+                            ,   b"b" => { 0x1u8 << 2 }
+                            ,   b"c" => { 0x1u8 << 3 }
+                            ,   b"d" => { 0x1u8 << 4 }
+                            ,   b"e" => { 0x1u8 << 5 }
+                            ,   b"f" => { 0x1u8 << 6 }
+                            ,   b"g" => { 0x1u8 << 7 }
+                            ,   _ => { 0x0u8 }
+                            };
+
+                        let is_am = app_info.time_disp.hour() >= 12;
+
+                    }
+                    else if let Some( x ) = RE_SEGMENT_AMPM.captures( kw.as_slice() )
+                    {
+                        /*
+                            <g visibilit="{{seg_am}}"></g>
+                            <g visibilit="{{seg_pm}}"></g>
+
+                            {{seg_am}}, {{seg_pm}} = "visible" or "hidden"
+                        */
+
+                        let is_am = app_info.time_disp.hour() >= 12;
+
+                        let m1 = caps.get(1).unwrap();
+                        
+                        buf.extend_from_slice( 
+                            if      is_am && m1.as_bytes() == b"am"
+                                ||  !is_am && m1.as_bytes() == b"pm"
+                            {
+                                b"visible"
+                            }
+                            else
+                            {
+                                b"hidden"
+                            }
+                        );
+                    }
+                    else 
+                    {
+                        buf.extend_from_slice( m0.as_bytes() );
+                    }
                 }
             }
 
             last_match = m0.end();
         }
+
         buf.extend_from_slice( &x[last_match..] );
 
         // render
@@ -1284,8 +1405,6 @@ fn make_timezone_menu(
             }
         }
     }
-
-    //debug!("{:?}", dic );
 
     let menu = Menu::new();
 
