@@ -794,7 +794,7 @@ struct AppInfo
 ,   show_date: bool
 ,   time_zone: String
 ,   theme: AppInfoTheme
-,   theme_custome: Option< String >
+,   theme_custom: Option< String >
 ,   zoom: u32
 ,   #[serde(skip)]
     zoom_update: bool
@@ -821,7 +821,7 @@ impl AppInfo
         ,   show_date: false
         ,   time_zone: String::new()
         ,   theme: AppInfoTheme::Theme1
-        ,   theme_custome: None
+        ,   theme_custom: None
         ,   zoom: 100
         ,   zoom_update: true
         ,   window_pos: None
@@ -1087,8 +1087,6 @@ fn draw_watch<'a>(
 }
 
 fn make_theme_menu(
-    window: &ApplicationWindow,
-    da: &DrawingArea,
     image_info: &Rc< RefCell< ImageInfo > >,
     app_info: &Rc< RefCell< AppInfo > >
 ) -> Menu
@@ -1112,14 +1110,14 @@ fn make_theme_menu(
                     app_info.theme = ait;
                     app_info.zoom = 100;
                     app_info.zoom_update = true;
-                    image_info.replace( load_theme( app_info.theme, app_info.theme_custome.clone() ).unwrap() );
+                    image_info.replace( load_theme( app_info.theme, app_info.theme_custom.clone() ).unwrap() );
                 }
             );
         }
 
         if ait == AppInfoTheme::Custom
         {
-            menu_item.set_sensitive( app_info.borrow().theme_custome.is_some() );
+            menu_item.set_sensitive( app_info.borrow().theme_custom.is_some() );
         }
 
         menu.append( &menu_item );
@@ -1129,7 +1127,6 @@ fn make_theme_menu(
 }
 
 fn make_zoom_menu(
-    da: &DrawingArea,
     app_info: &Rc< RefCell< AppInfo > >
 ) -> Menu
 {
@@ -1335,7 +1332,6 @@ fn make_timezone_menu(
 }
 
 fn make_popup_menu(
-    app: &Application,
     window: &ApplicationWindow,
     da: &DrawingArea,
     app_info: &Rc< RefCell< AppInfo > >,
@@ -1345,7 +1341,7 @@ fn make_popup_menu(
 {
     let menu = Menu::new();
 
-    let menu_item_pref = MenuItem::with_label( "Preferances" );
+    let menu_item_pref = MenuItem::with_label( "Preferences" );
 
     let menu_item_pref_alway_on_top = CheckMenuItem::with_label( "Alway on Top" );
 
@@ -1474,10 +1470,10 @@ fn make_popup_menu(
     let menu_pref_time_zone = make_timezone_menu( &da.clone(), &app_info.clone() );
     menu_item_pref_time_zone.set_submenu( Some( &menu_pref_time_zone ) );
 
-    let menu_pref_theme = make_theme_menu( &window.clone(), &da.clone(), &image_info.clone(), &app_info.clone() );
+    let menu_pref_theme = make_theme_menu( &image_info.clone(), &app_info.clone() );
     menu_item_pref_theme.set_submenu( Some( &menu_pref_theme ) );
 
-    let menu_pref_zoom = make_zoom_menu( &da.clone(), &app_info.clone() );
+    let menu_pref_zoom = make_zoom_menu( &app_info.clone() );
     menu_item_pref_zoom.set_submenu( Some( &menu_pref_zoom ) );
 
     let menu_item_about = MenuItem::with_label( "About" );
@@ -1602,7 +1598,7 @@ fn main() {
 
         app.connect_activate(move |app| {
 
-            let image_info = Rc::new( RefCell::new( load_theme( app_info.borrow().theme, app_info.borrow().theme_custome.clone()  ).unwrap() ) );
+            let image_info = Rc::new( RefCell::new( load_theme( app_info.borrow().theme, app_info.borrow().theme_custom.clone()  ).unwrap() ) );
 
             let window = ApplicationWindow::builder()
                 .application(app)
@@ -1638,7 +1634,6 @@ fn main() {
             window.add(&da);
 
             {
-                let app = app.clone();
                 let window = window.clone();
                 let da = da.clone();
                 let image_info = image_info.clone();
@@ -1662,7 +1657,7 @@ fn main() {
                             }
                         ,   3 => /* right button */
                             {
-                                let menu = make_popup_menu( &app, &window, &da, &app_info, &image_info, logo );
+                                let menu = make_popup_menu( &window, &da, &app_info, &image_info, logo );
 
                                 menu.show_all();
                                 menu.popup_at_pointer( Some( evt ) );
