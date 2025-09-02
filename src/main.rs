@@ -792,6 +792,7 @@ enum AppInfoFormatDate
     Fmt1
 ,   Fmt2
 ,   Fmt3
+,   Fmt4
 ,   Custom
 }
 
@@ -810,10 +811,15 @@ impl AppInfoFormatDate
                 )
         ,   Self::Fmt2 =>
                 (
-                    "%D" /* Month-day-year format. Same as %m/%d/%y. */
-                ,   "Month/day/year (e.g., 10/31/25)"
+                    "%Y/%m/%d" /* Year/month/day format. Same as %Y/%m/%d. */
+                ,   "Year/month/day (e.g., 2025/10/31)"
                 )
         ,   Self::Fmt3 =>
+                (
+                    "%D" /* Month/day/year format. Same as %m/%d/%y. */
+                ,   "Month/day/year (e.g., 10/31/25)"
+                )
+        ,   Self::Fmt4 =>
                 (
                     "%v" /* Day-month-year format. Same as %e-%b-%Y. */
                 ,   "Day-month-year (e.g., 31-Oct-2025)"
@@ -1967,6 +1973,7 @@ fn make_popup_menu(
     menu_pref.append( &menu_item_pref_show_seconds );
     menu_pref.append( &menu_item_pref_enable_sub_second_hand );
     menu_pref.append( &menu_item_pref_enable_second_hand_smoothly );
+    menu_pref.append( &SeparatorMenuItem::new() );
     menu_pref.append( &menu_item_pref_text_visibility );
     menu_pref.append( &SeparatorMenuItem::new() );
     menu_pref.append( &menu_item_pref_time_zone );
