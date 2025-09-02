@@ -786,6 +786,83 @@ enum AppInfoTheme
 ,   Custom
 }
 
+#[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
+enum AppInfoFormatDate
+{
+    Fmt1
+,   Fmt2
+,   Fmt3
+,   Custom
+}
+
+impl AppInfoFormatDate
+{
+    fn format_str( &self ) -> ( &str, &str )
+    {
+        // see https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+
+        match self
+        {
+            Self::Fmt1 =>
+                (
+                    "%F" /* Year-month-day format (ISO 8601). Same as %Y-%m-%d. */
+                ,   "Year-month-day (e.g., 2025-10-31)"
+                )
+        ,   Self::Fmt2 =>
+                (
+                    "%D" /* Month-day-year format. Same as %m/%d/%y. */
+                ,   "Month/day/year (e.g., 10/31/25)"
+                )
+        ,   Self::Fmt3 =>
+                (
+                    "%v" /* Day-month-year format. Same as %e-%b-%Y. */
+                ,   "Day-month-year (e.g., 31-Oct-2025)"
+                )
+        ,   _ => ( "", "Custom" )
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
+enum AppInfoFormatTime
+{
+    Fmt1
+,   Fmt2
+,   Fmt3
+,   Custom
+}
+
+impl AppInfoFormatTime
+{
+    fn format_str( &self ) -> ( &str, &str )
+    {
+        // see https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+
+        match self
+        {
+            Self::Fmt1 =>
+                (
+                    "%r" /* Locale’s 12 hour clock time. (e.g., 11:11:04 PM). Falls back to %X if the locale does not have a 12 hour clock format. */
+                ,   "12 hour clock time (e.g., 11:11:04 PM)"
+                )
+        ,   Self::Fmt2 =>
+                (
+                    "%T" /* Hour-minute-second format. Same as %H:%M:%S. */
+                ,   "Hour-minute-second (e.g., 23:11:04) "
+                )
+        ,   Self::Fmt3 =>
+                (
+                    "%R" /* Hour-minute format. Same as %H:%M. */
+                ,   "Hour-minute (e.g., 23:11)"
+                )
+        ,   _ => ( "", "Custom" )
+        }
+    }
+}
+
+const FORMAT_TIME_HMS: &str = "%H:%M:%S";
+const FORMAT_TIME_AMPM: &str = "%p";
+
 #[derive(Debug, Serialize, Deserialize)]
 struct AppInfo
 {
@@ -794,15 +871,20 @@ struct AppInfo
 ,   show_seconds: bool
 ,   enable_sub_second_hand: bool
 ,   enable_second_hand_smoothly: bool
-,   show_date: bool
+,   enable_text_time_zone: bool
+,   enable_text_date: bool
+,   enable_text_time: bool
+,   enable_text_time_ampm: bool
+,   enable_text_time_segment: bool
+,   enable_text_time_segment_hour12: bool
+,   text_format_date: AppInfoFormatDate
+,   text_format_date_custom: Option< String >
+,   text_format_time: AppInfoFormatTime
+,   text_format_time_custom: Option< String >
 ,   time_zone: String
 ,   theme: AppInfoTheme
 ,   theme_custom: Option< String >
 ,   zoom: u32
-,   enable_base_text: bool
-,   text_format_date: Option< String >
-,   text_format_time: Option< String >
-,   text_enable_segment_hour12: bool
 ,   #[serde(skip)]
     zoom_update: bool
 ,   window_pos: Option< ( i32, i32 ) >
@@ -825,15 +907,20 @@ impl AppInfo
         ,   show_seconds: true
         ,   enable_sub_second_hand: false
         ,   enable_second_hand_smoothly: true
-        ,   show_date: false
+        ,   enable_text_time_zone: true
+        ,   enable_text_date: true
+        ,   enable_text_time: true
+        ,   enable_text_time_ampm: true
+        ,   enable_text_time_segment: true
+        ,   enable_text_time_segment_hour12: false
+        ,   text_format_date: AppInfoFormatDate::Fmt1
+        ,   text_format_date_custom: None
+        ,   text_format_time: AppInfoFormatTime::Fmt1
+        ,   text_format_time_custom: None
         ,   time_zone: String::new()
         ,   theme: AppInfoTheme::Theme1
         ,   theme_custom: None
         ,   zoom: 100
-        ,   enable_base_text: true
-        ,   text_format_date: None
-        ,   text_format_time: None
-        ,   text_enable_segment_hour12: false
 
         ,   zoom_update: true
         ,   window_pos: None
@@ -1041,7 +1128,7 @@ fn draw_watch<'a>(
     }
 
     // render sub_base_text
-    if let Some( x ) = image_info.bytes_base_text.as_ref() && app_info.enable_base_text
+    if let Some( x ) = image_info.bytes_base_text.as_ref()
     {
         // text replace
         static RE_REPLACE: LazyLock<regex::bytes::Regex> = LazyLock::new(
@@ -1083,169 +1170,182 @@ fn draw_watch<'a>(
 
                 b"time_zone" =>
                 {
-                    buf.extend_from_slice( app_info.time_zone.as_bytes() );
+                    if !app_info.enable_text_time_zone
+                    {
+                        buf.extend_from_slice( app_info.time_zone.as_bytes() );
+                    }
                 }
                 b"date" =>
                 {
-                    if app_info.text_format_date.is_some()
+                    if app_info.enable_text_date
                     {
-                        let df = app_info.time_disp.format( app_info.text_format_date.as_ref().unwrap() );
-
-                        let mut buffer = String::new();
-                        
-                        if let Ok(_) = df.write_to(&mut buffer)
+                        if app_info.text_format_date == AppInfoFormatDate::Custom && app_info.text_format_date_custom.is_some()
                         {
-                            buf.extend_from_slice( buffer.as_bytes() );
+                            let df = app_info.time_disp.format( app_info.text_format_date_custom.as_ref().unwrap() );
+
+                            let mut buffer = String::new();
+
+                            if let Ok(_) = df.write_to(&mut buffer)
+                            {
+                                buf.extend_from_slice( buffer.as_bytes() );
+                            }
                         }
-                    }
-                    else
-                    {
-                        /* "%Y-%m-%d" */
-                        buf.extend_from_slice( app_info.time_disp.format( "%F" ).to_string().as_bytes() );
+                        else
+                        {
+                            buf.extend_from_slice( app_info.time_disp.format( app_info.text_format_date.format_str().0 ).to_string().as_bytes() );
+                        }
                     }
                 }
                 b"time" =>
                 {
-                    if app_info.text_format_time.is_some()
+                    if app_info.enable_text_time
                     {
-                        let df = app_info.time_disp.format( app_info.text_format_time.as_ref().unwrap() );
-
-                        let mut buffer = String::new();
-
-                        if let Ok(_) = df.write_to(&mut buffer)
+                        if app_info.text_format_time == AppInfoFormatTime::Custom && app_info.text_format_time_custom.is_some()
                         {
-                            buf.extend_from_slice( buffer.as_bytes() );
+                            let df = app_info.time_disp.format( app_info.text_format_time_custom.as_ref().unwrap() );
+
+                            let mut buffer = String::new();
+
+                            if let Ok(_) = df.write_to(&mut buffer)
+                            {
+                                buf.extend_from_slice( buffer.as_bytes() );
+                            }
                         }
-                    }
-                    else
-                    {
-                        buf.extend_from_slice( app_info.time_disp.format( "%r" /* "%H:%M:%S" */ ).to_string().as_bytes() );
+                        else
+                        {
+                            buf.extend_from_slice( app_info.time_disp.format( app_info.text_format_time.format_str().0 ).to_string().as_bytes() );
+                        }
                     }
                 }
                 b"time_hms" =>
                 {
-                    buf.extend_from_slice( app_info.time_disp.format( "%H:%M:%S" ).to_string().as_bytes() );
+                    if app_info.enable_text_time
+                    {
+                        buf.extend_from_slice( app_info.time_disp.format( FORMAT_TIME_HMS ).to_string().as_bytes() );
+                    }
                 }
                 b"time_ampm" =>
                 {
-                    buf.extend_from_slice( app_info.time_disp.format( "%p" ).to_string().as_bytes() );
+                    if app_info.enable_text_time_ampm
+                    {
+                        buf.extend_from_slice( app_info.time_disp.format( FORMAT_TIME_AMPM ).to_string().as_bytes() );
+                    }
                 }
                 _ =>
                 {
-                    if let Some( caps ) = RE_SEGMENT_NUM.captures( kw.as_slice() )
+                    if app_info.enable_text_time_segment
                     {
-                        /*
-                            <g visibility="{{seg_(hh|hl|mh|ml|sh|sl)([a-g])}}"></g>
-                            ex.
-                            <g visibility="{{seg_hha}}"></g>
+                        if let Some( caps ) = RE_SEGMENT_NUM.captures( kw.as_slice() )
+                        {
+                            /*
+                                <g visibility="{{seg_(hh|hl|mh|ml|sh|sl)([a-g])}}"></g>
+                                ex.
+                                <g visibility="{{seg_hha}}"></g>
 
-                            {{seg_xxx}} = "visible" or "hidden"
+                                {{seg_xxx}} = "visible" or "hidden"
 
-                            $1 = (hh|hl|mh|ml|sh|sl)
-                                hh -> Hour High digit
-                                hl -> Hour Low digit
-                                mh -> Minute High digit
-                                ml -> Minute Low digit
-                                sh -> Second High digit
-                                sl -> Second Low digit
+                                $1 = (hh|hl|mh|ml|sh|sl)
+                                    hh -> Hour High digit
+                                    hl -> Hour Low digit
+                                    mh -> Minute High digit
+                                    ml -> Minute Low digit
+                                    sh -> Second High digit
+                                    sl -> Second Low digit
 
-                            $2 = a,b,c,d,e,f,g
-                                segment https://en.wikipedia.org/wiki/Seven-segment_display#/media/File:7_Segment_Display_with_Labeled_Segments.svg
-                                   =a=
-                                |f|   |b|
-                                   =g=
-                                |e|   |c|
-                                   =d=
-                        */
+                                $2 = a,b,c,d,e,f,g
+                                    segment https://en.wikipedia.org/wiki/Seven-segment_display#/media/File:7_Segment_Display_with_Labeled_Segments.svg
+                                    =a=
+                                    |f|   |b|
+                                    =g=
+                                    |e|   |c|
+                                    =d=
+                            */
 
-                        let m1 = caps.get(1).unwrap();
-                        let m2 = caps.get(2).unwrap();
+                            let m1 = caps.get(1).unwrap();
+                            let m2 = caps.get(2).unwrap();
 
-                        let flag_12 = app_info.text_enable_segment_hour12;
+                            let flag_12 = app_info.enable_text_time_segment_hour12;
 
-                        let num =
-                            match m1.as_bytes()
-                            {
-                                b"hh" => { ( if flag_12 { app_info.time_disp.hour12().1 } else { app_info.time_disp.hour() } ) / 10 }
-                            ,   b"hl" => { ( if flag_12 { app_info.time_disp.hour12().1 } else { app_info.time_disp.hour() } ) % 10 }
-                            ,   b"mh" => { app_info.time_disp.minute() / 10 }
-                            ,   b"ml" => { app_info.time_disp.minute() % 10 }
-                            ,   b"sh" => { app_info.time_disp.second() / 10 }
-                            ,   b"sl" => { app_info.time_disp.second() % 10 }
-                            ,   _ => { 0 }
-                            };
+                            let num =
+                                match m1.as_bytes()
+                                {
+                                    b"hh" => { ( if flag_12 { app_info.time_disp.hour12().1 } else { app_info.time_disp.hour() } ) / 10 }
+                                ,   b"hl" => { ( if flag_12 { app_info.time_disp.hour12().1 } else { app_info.time_disp.hour() } ) % 10 }
+                                ,   b"mh" => { app_info.time_disp.minute() / 10 }
+                                ,   b"ml" => { app_info.time_disp.minute() % 10 }
+                                ,   b"sh" => { app_info.time_disp.second() / 10 }
+                                ,   b"sl" => { app_info.time_disp.second() % 10 }
+                                ,   _ => { 0 }
+                                };
 
-                        // num -> seg
-                        // https://ja.wikipedia.org/wiki/7%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%83%87%E3%82%A3%E3%82%B9%E3%83%97%E3%83%AC%E3%82%A4#%E6%95%B0%E3%81%8B%E3%82%897%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%82%B3%E3%83%BC%E3%83%89%E3%81%B8%E3%81%AE%E5%A4%89%E6%8F%9B
+                            // num -> seg
+                            // https://ja.wikipedia.org/wiki/7%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%83%87%E3%82%A3%E3%82%B9%E3%83%97%E3%83%AC%E3%82%A4#%E6%95%B0%E3%81%8B%E3%82%897%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%82%B3%E3%83%BC%E3%83%89%E3%81%B8%E3%81%AE%E5%A4%89%E6%8F%9B
 
-                        let b_on: u8 =
-                            match num
-                            {
-                                0 => { 0x7E }
-                            ,   1 => { 0x30 }
-                            ,   2 => { 0x6d }
-                            ,   3 => { 0x79 }
-                            ,   4 => { 0x33 }
-                            ,   5 => { 0x5b }
-                            ,   6 => { 0x5f }
-                            ,   7 => { 0x70 }
-                            ,   8 => { 0x7f }
-                            ,   9 => { 0x7b }
-                            ,   _ => { 0x00 }
-                            };
+                            let b_on: u8 =
+                                match num
+                                {
+                                    0 => { 0x7E }
+                                ,   1 => { 0x30 }
+                                ,   2 => { 0x6d }
+                                ,   3 => { 0x79 }
+                                ,   4 => { 0x33 }
+                                ,   5 => { 0x5b }
+                                ,   6 => { 0x5f }
+                                ,   7 => { 0x70 }
+                                ,   8 => { 0x7f }
+                                ,   9 => { 0x7b }
+                                ,   _ => { 0x00 }
+                                };
 
-                        let b_mask: u8 =
-                            match m2.as_bytes()
-                            {
-                                b"a" => { 0x1 << 7 }
-                            ,   b"b" => { 0x1 << 6 }
-                            ,   b"c" => { 0x1 << 5 }
-                            ,   b"d" => { 0x1 << 4 }
-                            ,   b"e" => { 0x1 << 3 }
-                            ,   b"f" => { 0x1 << 2 }
-                            ,   b"g" => { 0x1 << 1 }
-                            ,   _ => { 0x0u8 }
-                            };
+                            let b_mask: u8 =
+                                match m2.as_bytes()
+                                {
+                                    b"a" => { 0x1 << 7 }
+                                ,   b"b" => { 0x1 << 6 }
+                                ,   b"c" => { 0x1 << 5 }
+                                ,   b"d" => { 0x1 << 4 }
+                                ,   b"e" => { 0x1 << 3 }
+                                ,   b"f" => { 0x1 << 2 }
+                                ,   b"g" => { 0x1 << 1 }
+                                ,   _ => { 0x0u8 }
+                                };
 
-                        buf.extend_from_slice(
-                            if b_on & b_mask != 0x00
-                            {
-                                b"visible"
-                            }
-                            else
-                            {
-                                b"hidden"
-                            }
-                        );
-                    }
-                    else if let Some( caps ) = RE_SEGMENT_AMPM.captures( kw.as_slice() )
-                    {
-                        /*
-                            <g visibility="{{seg_am}}"></g>
-                            <g visibility="{{seg_pm}}"></g>
+                            buf.extend_from_slice(
+                                if b_on & b_mask != 0x00
+                                {
+                                    b"visible"
+                                }
+                                else
+                                {
+                                    b"hidden"
+                                }
+                            );
+                        }
+                        else if let Some( caps ) = RE_SEGMENT_AMPM.captures( kw.as_slice() )
+                        {
+                            /*
+                                <g visibility="{{seg_am}}"></g>
+                                <g visibility="{{seg_pm}}"></g>
 
-                            {{seg_am}}, {{seg_pm}} = "visible" or "hidden"
-                        */
+                                {{seg_am}}, {{seg_pm}} = "visible" or "hidden"
+                            */
 
-                        let is_am = app_info.time_disp.hour() >= 12;
+                            let is_am = app_info.time_disp.hour() >= 12;
 
-                        let m1 = caps.get(1).unwrap();
+                            let m1 = caps.get(1).unwrap();
 
-                        buf.extend_from_slice(
-                            if      is_am && m1.as_bytes() == b"am"
-                                ||  !is_am && m1.as_bytes() == b"pm"
-                            {
-                                b"visible"
-                            }
-                            else
-                            {
-                                b"hidden"
-                            }
-                        );
-                    }
-                    else
-                    {
-                        buf.extend_from_slice( m0.as_bytes() );
+                            buf.extend_from_slice(
+                                if      is_am && m1.as_bytes() == b"am"
+                                    ||  !is_am && m1.as_bytes() == b"pm"
+                                {
+                                    b"visible"
+                                }
+                                else
+                                {
+                                    b"hidden"
+                                }
+                            );
+                        }
                     }
                 }
             }
@@ -1580,6 +1680,177 @@ fn make_timezone_menu(
     menu
 }
 
+fn make_text_visibility_menu(
+    da: &DrawingArea,
+    app_info: &Rc< RefCell< AppInfo > >
+) -> Menu
+{
+    let menu = Menu::new();
+
+    let menu_item_enable_text_time_zone = CheckMenuItem::with_label( "Enable Time Zone" );
+    let menu_item_enable_text_date = CheckMenuItem::with_label( "Enable Date" );
+    let menu_item_enable_text_time = CheckMenuItem::with_label( "Enable Time" );
+    let menu_item_enable_text_time_ampm = CheckMenuItem::with_label( "Enable Time AM/PM" );
+    let menu_item_enable_text_time_segment = CheckMenuItem::with_label( "Enable Time Segment" );
+    let menu_item_enable_text_time_segment_hour12 = CheckMenuItem::with_label( "Enable Time Segment Hour 12" );
+    let menu_item_text_format_date = MenuItem::with_label( "Formant Date" );
+    let menu_item_text_format_time = MenuItem::with_label( "Formant Time" );
+
+    menu_item_enable_text_time_zone.set_active( app_info.borrow().enable_text_time_zone );
+
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
+
+        menu_item_enable_text_time_zone.connect_activate( move |_|
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.enable_text_time_zone = !app_info.enable_text_time_zone;
+                da.queue_draw();
+            }
+        );
+    }
+
+    menu_item_enable_text_date.set_active( app_info.borrow().enable_text_date );
+
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
+
+        menu_item_enable_text_date.connect_activate( move |_|
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.enable_text_date = !app_info.enable_text_date;
+                da.queue_draw();
+            }
+        );
+    }
+
+    menu_item_enable_text_time.set_active( app_info.borrow().enable_text_time );
+
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
+
+        menu_item_enable_text_time.connect_activate( move |_|
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.enable_text_time = !app_info.enable_text_time;
+                da.queue_draw();
+            }
+        );
+    }
+
+    menu_item_enable_text_time_ampm.set_active( app_info.borrow().enable_text_time_ampm );
+
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
+
+        menu_item_enable_text_time_ampm.connect_activate( move |_|
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.enable_text_time_ampm = !app_info.enable_text_time_ampm;
+                da.queue_draw();
+            }
+        );
+    }
+
+    menu_item_enable_text_time_segment.set_active( app_info.borrow().enable_text_time_segment );
+
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
+
+        menu_item_enable_text_time_segment.connect_activate( move |_|
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.enable_text_time_segment = !app_info.enable_text_time_segment;
+                da.queue_draw();
+            }
+        );
+    }
+
+    menu_item_enable_text_time_segment_hour12.set_active( app_info.borrow().enable_text_time_segment_hour12 );
+
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
+
+        menu_item_enable_text_time_segment_hour12.connect_activate( move |_|
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.enable_text_time_segment_hour12 = !app_info.enable_text_time_segment_hour12;
+                da.queue_draw();
+            }
+        );
+    }
+
+    let menu_text_format_date = Menu::new();
+
+    for x in AppInfoFormatDate::iter()
+    {
+        let menu_item = CheckMenuItem::with_label( x.format_str().1 );
+
+        menu_item.set_active( app_info.borrow().text_format_date == x );
+
+        {
+            let da = da.clone();
+            let app_info = app_info.clone();
+
+            menu_item.connect_activate( move |_|
+                {
+                    let mut app_info = app_info.borrow_mut();
+                    app_info.text_format_date = x;
+                    da.queue_draw();
+                }
+            );
+        }
+
+        menu_text_format_date.append( &menu_item );
+    }
+
+    menu_item_text_format_date.set_submenu( Some( &menu_text_format_date ) );
+
+    let menu_text_format_time = Menu::new();
+
+    for x in AppInfoFormatTime::iter()
+    {
+        let menu_item = CheckMenuItem::with_label( x.format_str().1 );
+
+        menu_item.set_active( app_info.borrow().text_format_time == x );
+
+        {
+            let da = da.clone();
+            let app_info = app_info.clone();
+
+            menu_item.connect_activate( move |_|
+                {
+                    let mut app_info = app_info.borrow_mut();
+                    app_info.text_format_time = x;
+                    da.queue_draw();
+                }
+            );
+        }
+
+        menu_text_format_time.append( &menu_item );
+    }
+
+    menu_item_text_format_time.set_submenu( Some( &menu_text_format_time ) );
+
+    menu.append( &menu_item_enable_text_time_zone );
+    menu.append( &menu_item_enable_text_date );
+    menu.append( &menu_item_enable_text_time );
+    menu.append( &menu_item_enable_text_time_ampm );
+    menu.append( &menu_item_enable_text_time_segment );
+    menu.append( &menu_item_enable_text_time_segment_hour12 );
+    menu.append( &SeparatorMenuItem::new() );
+    menu.append( &menu_item_text_format_date );
+    menu.append( &menu_item_text_format_time );
+
+    menu
+}
+
 fn make_popup_menu(
     window: &ApplicationWindow,
     da: &DrawingArea,
@@ -1611,7 +1882,7 @@ fn make_popup_menu(
         );
     }
 
-    let menu_item_pref_lock_pos = gtk::CheckMenuItem::with_label( "Lock Position" );
+    let menu_item_pref_lock_pos = CheckMenuItem::with_label( "Lock Position" );
 
     menu_item_pref_lock_pos.set_active( app_info.borrow().lock_pos );
 
@@ -1628,7 +1899,7 @@ fn make_popup_menu(
         );
     }
 
-    let menu_item_pref_show_seconds = gtk::CheckMenuItem::with_label( "Show Seconds" );
+    let menu_item_pref_show_seconds = CheckMenuItem::with_label( "Show Seconds" );
 
     menu_item_pref_show_seconds.set_active( app_info.borrow().show_seconds );
 
@@ -1645,7 +1916,7 @@ fn make_popup_menu(
         );
     }
 
-    let menu_item_pref_enable_sub_second_hand = gtk::CheckMenuItem::with_label( "Enable sub second hand" );
+    let menu_item_pref_enable_sub_second_hand = CheckMenuItem::with_label( "Enable sub second hand" );
 
     menu_item_pref_enable_sub_second_hand.set_active( app_info.borrow().enable_sub_second_hand );
 
@@ -1662,7 +1933,7 @@ fn make_popup_menu(
         );
     }
 
-    let menu_item_pref_enable_second_hand_smoothly  = gtk::CheckMenuItem::with_label( "Enable second hand smoothly" );
+    let menu_item_pref_enable_second_hand_smoothly  = CheckMenuItem::with_label( "Enable second hand smoothly" );
 
     menu_item_pref_enable_second_hand_smoothly .set_active( app_info.borrow().enable_second_hand_smoothly );
 
@@ -1679,22 +1950,10 @@ fn make_popup_menu(
         );
     }
 
-    let menu_item_pref_show_date = gtk::CheckMenuItem::with_label( "Show Date" );
+    let menu_item_pref_text_visibility = MenuItem::with_label( "Text visibility" );
 
-    menu_item_pref_show_date.set_active( app_info.borrow().show_date );
-
-    {
-        let da = da.clone();
-        let app_info = app_info.clone();
-
-        menu_item_pref_show_date.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.show_date = !app_info.show_date;
-                da.queue_draw();
-            }
-        );
-    }
+    let menu_pref_text_visibility = make_text_visibility_menu( &da.clone(), &app_info.clone() );
+    menu_item_pref_text_visibility.set_submenu( Some( &menu_pref_text_visibility ) );
 
     let menu_item_pref_time_zone = MenuItem::with_label( "Time Zone" );
     let menu_item_pref_theme = MenuItem::with_label( "Theme" );
@@ -1708,7 +1967,7 @@ fn make_popup_menu(
     menu_pref.append( &menu_item_pref_show_seconds );
     menu_pref.append( &menu_item_pref_enable_sub_second_hand );
     menu_pref.append( &menu_item_pref_enable_second_hand_smoothly );
-    menu_pref.append( &menu_item_pref_show_date );
+    menu_pref.append( &menu_item_pref_text_visibility );
     menu_pref.append( &SeparatorMenuItem::new() );
     menu_pref.append( &menu_item_pref_time_zone );
     menu_pref.append( &menu_item_pref_theme );
@@ -1754,7 +2013,7 @@ fn make_popup_menu(
         );
     }
 
-    let menu_item_quit = MenuItem::with_label( "Quit");
+    let menu_item_quit = MenuItem::with_label( "Quit" );
 
     {
         let window = window.clone();
@@ -1958,13 +2217,13 @@ fn main() {
     }
 
     {
-        let toml_str = toml::to_string( app_info.as_ref() ).unwrap();
-        let toml_str = format!( "#TOML\n\n{}", toml_str );
-
         app.connect_shutdown(
             move | _ |
             {
                 debug!("connect_shutdown");
+
+                let toml_str = toml::to_string( app_info.as_ref() ).unwrap();
+                let toml_str = format!( "#TOML\n\n{}", toml_str );
 
                 let file = File::create(app_info_file );
 
