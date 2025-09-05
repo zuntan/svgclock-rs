@@ -15,7 +15,7 @@ use std::cell::RefCell;
 use std::sync::LazyLock;
 use std::f64::consts::PI;
 
-use log::{Level, log_enabled};
+// use log::{Level, log_enabled};
 
 use strum::{ IntoEnumIterator };
 
@@ -38,7 +38,7 @@ use gtk::gdk_pixbuf::Pixbuf;
 
 use rsvg::SvgHandle;
 
-use chrono::{ DateTime, Local, NaiveDateTime, TimeDelta, Timelike, Utc };
+use chrono::{ DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike, Utc };
 
 use linked_hash_map::LinkedHashMap;
 
@@ -247,8 +247,7 @@ fn parse_xml_center( r_src: &mut FilterInputReader, target: FilterTarget ) -> Re
             && let Some(attr) = attr
         {
             if let Ok(attr_transform) = std::str::from_utf8(attr.value.as_ref()) {
-                debug!("attr_translate:{:?}", attr_transform);
-
+                // debug!("attr_translate:{:?}", attr_transform);
                 if let Some(x) = parse_svg_transform_value(attr_transform) {
                     return x;
                 }
@@ -294,9 +293,11 @@ fn parse_xml_center( r_src: &mut FilterInputReader, target: FilterTarget ) -> Re
                     }
                 }
                 quick_xml::events::Event::Empty(ref tag) => {
+                    /*
                     debug!("target_layer: {:?} ", target_layer);
                     debug!("depth: {:?} ", translate_affines.len());
                     debug!("tag: {:?} ", tag);
+                    */
 
                     if target_layer
                         && translate_affines.len() == 2
@@ -306,16 +307,15 @@ fn parse_xml_center( r_src: &mut FilterInputReader, target: FilterTarget ) -> Re
                         )
                     {
                         let mut tran_affine = DAffine2::IDENTITY;
-
-                        debug!("tran_affine A: {:?}", tran_affine);
+                        // debug!("tran_affine A: {:?}", tran_affine);
 
                         for x in &translate_affines {
                             tran_affine *= x;
-                            debug!("tran_affine B: {:?}", tran_affine);
+                            // debug!("tran_affine B: {:?}", tran_affine);
                         }
 
                         tran_affine *= get_transform_affine(tag);
-                        debug!("tran_affine C: {:?}", tran_affine);
+                        //debug!("tran_affine C: {:?}", tran_affine);
 
                         let mut vec2 = DVec2 { x: 0.0, y: 0.0 };
 
@@ -339,11 +339,8 @@ fn parse_xml_center( r_src: &mut FilterInputReader, target: FilterTarget ) -> Re
                             }
                         }
 
-                        debug!("vec2: {:?}", vec2);
-
                         ret = tran_affine.transform_point2(vec2);
-
-                        debug!("ret: {:?}", ret);
+                        // debug!("ret: {:?}", ret);
                     }
                 }
                 quick_xml::events::Event::End(ref _tag) => {
@@ -497,33 +494,6 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
     let src_buf: Option< Vec<u8> > =
         match theme
         {
-            AppInfoTheme::Theme1 =>
-            {
-                let mut src_buf = Vec::<u8>::new();
-                let mut src = File::open("clock_theme_1.svg").unwrap();
-                src.read_to_end( &mut src_buf ).unwrap();
-
-                Some( src_buf )
-            }
-
-            AppInfoTheme::Theme2 =>
-            {
-                let mut src_buf = Vec::<u8>::new();
-                let mut src = File::open("clock_theme_2.svg").unwrap();
-                src.read_to_end( &mut src_buf ).unwrap();
-
-                Some( src_buf )
-            }
-
-            AppInfoTheme::Theme3 =>
-            {
-                let mut src_buf = Vec::<u8>::new();
-                let mut src = File::open("clock_theme_3.svg").unwrap();
-                src.read_to_end( &mut src_buf ).unwrap();
-
-                Some( src_buf )
-            }
-
             AppInfoTheme::Custom =>
             {
                 if let Some( theme_custom ) = theme_custom
@@ -542,6 +512,14 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
                     else { None }
                 }
                 else { None }
+            }
+            _ =>
+            {
+                let mut src_buf = Vec::<u8>::new();
+                let mut src = File::open(theme.source() ).unwrap();
+                src.read_to_end( &mut src_buf ).unwrap();
+
+                Some( src_buf )
             }
         }
         ;
@@ -684,33 +662,46 @@ fn load_logo() -> Option< Pixbuf >
     // load logo
     let mut src_buf = Vec::<u8>::new();
 
-    let mut src = File::open("logo.svg").unwrap();
+    let file = "logo.png";
+
+    let mut src = File::open(file ).unwrap();
     src.read_to_end(&mut src_buf).unwrap();
 
-    if let Ok(result) = parse_xml_sz_and_vbox(&mut FilterInputReader::from_reader(&src_buf)) {
+    if file.ends_with( ".svg" )
+    {
+        if let Ok(result) = parse_xml_sz_and_vbox(&mut FilterInputReader::from_reader(&src_buf)) {
 
-        let sz = result.0;
-        let surface = ImageSurface::create(Format::ARgb32, sz.x, sz.y ).unwrap();
+            let sz = result.0;
+            let surface = ImageSurface::create(Format::ARgb32, sz.x, sz.y ).unwrap();
 
-        {
-            let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &src_buf ));
+            {
+                let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &src_buf ));
 
-            let svg_handle =
-                rsvg::Loader::new()
-                .read_stream(
-                    &svg_stream,
-                    None::<&gtk::gio::File>,
-                    None::<&gtk::gio::Cancellable>,
-                )
-                .unwrap()
-                ;
+                let svg_handle =
+                    rsvg::Loader::new()
+                    .read_stream(
+                        &svg_stream,
+                        None::<&gtk::gio::File>,
+                        None::<&gtk::gio::Cancellable>,
+                    )
+                    .unwrap()
+                    ;
 
-            let cctx = Context::new( &surface ).unwrap();
-            let viewport = Rectangle::new(0.0, 0.0, sz.x as f64, sz.y as f64);
+                let cctx = Context::new( &surface ).unwrap();
+                let viewport = Rectangle::new(0.0, 0.0, sz.x as f64, sz.y as f64);
 
-            let svg_renderer = rsvg::CairoRenderer::new( &svg_handle );
-            svg_renderer.render_document( &cctx, &viewport ).unwrap();
+                let svg_renderer = rsvg::CairoRenderer::new( &svg_handle );
+                svg_renderer.render_document( &cctx, &viewport ).unwrap();
+            }
+
+            return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
         }
+    }
+    else if file.ends_with( ".png" )
+    {
+        let mut src_buf = &src_buf[..];  // with io.Read Trait
+
+        let surface = ImageSurface::create_from_png(  &mut src_buf ).unwrap();
 
         return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
     }
@@ -787,7 +778,38 @@ enum AppInfoTheme
     Theme1
 ,   Theme2
 ,   Theme3
+,   Theme4
+,   Theme5
+,   Theme6
 ,   Custom
+}
+
+impl AppInfoTheme
+{
+    fn name( &self ) -> String
+    {
+        match self
+        {
+            Self::Theme1 => format!( "[{}] {}", self.to_string(), "Classic, With sub second, without text." )
+        ,   Self::Theme2 => format!( "[{}] {}", self.to_string(), "Modern, Square, With everything." )
+        ,   Self::Theme3 => format!( "[{}] {}", self.to_string(), "Modern, With digital segment." )
+        ,   _ => format!( "[{}]", self.to_string() )
+        }
+    }
+
+    fn source( &self ) -> &str
+    {
+        match self
+        {
+            Self::Theme1 => "clock_theme_1.svg"
+        ,   Self::Theme2 => "clock_theme_2.svg"
+        ,   Self::Theme3 => "clock_theme_3.svg"
+        ,   Self::Theme4 => "clock_theme_4.svg"
+        ,   Self::Theme5 => "clock_theme_5.svg"
+        ,   Self::Theme6 => "clock_theme_6.svg"
+        ,   _ => ""
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
@@ -919,7 +941,7 @@ struct AppInfo
 ,   #[serde(skip)]
     timer_sourceid: RefCell< Option< gtk::glib::SourceId > >
 ,   #[serde(skip)]
-    time_disp_force: Option< NaiveDateTime >
+    time_disp_force: Option< NaiveTime >
 }
 
 impl AppInfo
@@ -962,63 +984,53 @@ impl AppInfo
         self.zoom_update = true;
         self.time_disp = Local::now().date_naive().and_hms_opt(0,0,0).unwrap();
         self.time_disp_st = None;
+
+        self.theme_custom =
+            if let Ok( x ) = std::env::var( "THEME_CUSTOM" )
+            {
+                Some( x )
+            }
+            else
+            {
+                None
+            }
+            ;
+
+        self.time_disp_force =
+            if let Ok( x ) = std::env::var( "FIX_TIME" )
+            {
+                if let Ok( x ) = NaiveTime::parse_from_str( &x, "%H:%M:%S")
+                {
+                    Some( x )
+                }
+                else if let Ok( x ) = NaiveTime::parse_from_str( &x, "%H:%M")
+                {
+                    Some( x )
+                }
+                else
+                {
+                    None
+                }
+            }
+            else
+            {
+                None
+            }
+            ;
     }
 }
 
 const MOVE_FAST_SECS: i64 = 5;
 const ENABLE_ROTATE_CENTER_CIRCLE: bool = false;
 
-fn draw_watch<'a>(
-    da: &DrawingArea,
-    cctx : &'a Context, image_info : &'a ImageInfo, app_info: &'a mut AppInfo )
+fn update_watch( da: &DrawingArea, app_info: &mut AppInfo )
 {
-    let zoom_factor = app_info.zoom as f64 / 100.0;
-
-    let sz = DVec2::new(
-        image_info.sz.x as f64 * zoom_factor
-    ,   image_info.sz.y as f64 * zoom_factor
-    );
-
-    let viewport = Rectangle::new(0.0, 0.0, sz.x, sz.y );
-
-    let func_render = | svg_handle : &SvgHandle |
-    {
-        let svg_renderer = rsvg::CairoRenderer::new(svg_handle);
-        svg_renderer.render_document(cctx, &viewport).unwrap();
-    };
-
-    let center = DVec2
-    {
-        x: sz.x * ( image_info.center.x / image_info.viewbox_sz.x )
-    ,   y: sz.y * ( image_info.center.y / image_info.viewbox_sz.y )
-    };
-
-    let center_sub_second = DVec2
-    {
-        x: sz.x * ( image_info.center_sub_second.x / image_info.viewbox_sz.x )
-    ,   y: sz.y * ( image_info.center_sub_second.y / image_info.viewbox_sz.y )
-    };
-
-    let func_render_rotate = | svg_handle : &SvgHandle, _center: &DVec2, angle : f64 |
-    {
-        let _ = cctx.save();
-
-        cctx.translate( _center.x * 1.0, _center.y * 1.0 );
-        cctx.rotate( angle * ( PI / 180.0 ) );
-        cctx.translate( _center.x * -1.0, _center.y * -1.0 );
-
-        let svg_renderer = rsvg::CairoRenderer::new( svg_handle );
-        svg_renderer.render_document(cctx, &viewport).unwrap();
-
-        let _ = cctx.restore();
-    };
-
     let time_now = Local::now();
 
     let time_now_naive =
         if app_info.time_disp_force.is_some()
         {
-            app_info.time_disp_force.as_ref().unwrap().clone()
+            time_now.with_time( app_info.time_disp_force.as_ref().copied().unwrap() ).unwrap().naive_local()
         }
         else if app_info.time_zone == ""
         {
@@ -1075,8 +1087,6 @@ fn draw_watch<'a>(
             }
        }
        ;
-
-
 
     let has_time_disp_st = app_info.time_disp_st.is_some();
 
@@ -1144,6 +1154,63 @@ fn draw_watch<'a>(
             }
         }
     }
+}
+
+fn draw_watch(
+    cctx : &Context, image_info : &ImageInfo, app_info: &AppInfo )
+{
+    let zoom_factor = app_info.zoom as f64 / 100.0;
+
+    let sz = DVec2::new(
+        image_info.sz.x as f64 * zoom_factor
+    ,   image_info.sz.y as f64 * zoom_factor
+    );
+
+    let viewport = Rectangle::new(0.0, 0.0, sz.x, sz.y );
+
+    let func_render = | svg_handle : &SvgHandle |
+    {
+        let svg_renderer = rsvg::CairoRenderer::new(svg_handle);
+        svg_renderer.render_document(cctx, &viewport).unwrap();
+    };
+
+    let center = DVec2
+    {
+        x: sz.x * ( image_info.center.x / image_info.viewbox_sz.x )
+    ,   y: sz.y * ( image_info.center.y / image_info.viewbox_sz.y )
+    };
+
+    let center_sub_second = DVec2
+    {
+        x: sz.x * ( image_info.center_sub_second.x / image_info.viewbox_sz.x )
+    ,   y: sz.y * ( image_info.center_sub_second.y / image_info.viewbox_sz.y )
+    };
+
+    let func_render_rotate = | svg_handle : &SvgHandle, _center: &DVec2, angle : f64 |
+    {
+        let _ = cctx.save();
+
+        cctx.translate( _center.x * 1.0, _center.y * 1.0 );
+        cctx.rotate( angle * ( PI / 180.0 ) );
+        cctx.translate( _center.x * -1.0, _center.y * -1.0 );
+
+        let svg_renderer = rsvg::CairoRenderer::new( svg_handle );
+        svg_renderer.render_document(cctx, &viewport).unwrap();
+
+        let _ = cctx.restore();
+    };
+
+    let time_now =
+        if app_info.time_disp_force.is_some()
+        {
+            //DateTime::UNIX_EPOCH.with_timezone( &Local )
+            Local::now().with_time( app_info.time_disp_force.unwrap() ).unwrap()
+        }
+        else
+        {
+            Local::now()
+        }
+        ;
 
     let time_secs = app_info.time_disp.hour12().1 * 60 * 60 + app_info.time_disp.minute() * 60 + app_info.time_disp.second();
 
@@ -1526,6 +1593,62 @@ fn draw_watch<'a>(
 
 }
 
+fn make_png_image(
+    image_info : &ImageInfo, app_info: &AppInfo )
+{
+    let zoom_factor = app_info.zoom as f64 / 100.0;
+
+    let sz = DVec2::new(
+        image_info.sz.x as f64 * zoom_factor
+    ,   image_info.sz.y as f64 * zoom_factor
+    );
+
+    let mut surface = ImageSurface::create(Format::ARgb32, sz.x as i32, sz.y as i32).unwrap();
+
+    {
+        let cctx = Context::new(&surface).unwrap();
+        draw_watch( &cctx, image_info, app_info );
+        surface.flush();
+    }
+
+    if  let Some( region ) = make_region( image_info, sz )
+    {
+        let h = surface.height();
+        let w = surface.width();
+        let s = surface.stride();
+
+        match surface.data()
+        {
+            Ok( mut data ) =>
+            {
+                for y in 0..h
+                {
+                    for x in 0..w
+                    {
+                        if !region.contains_point(x, y)
+                        {
+                            let p = y * s + x * 4;
+                            data[ ( p + 0 ) as usize] = 0x00; // b
+                            data[ ( p + 1 ) as usize] = 0x00; // g
+                            data[ ( p + 2 ) as usize] = 0x00; // r
+                            data[ ( p + 3 ) as usize] = 0x00; // a
+                        }
+                    }
+                }
+            }
+        ,   Err( x ) =>
+            {
+                debug!("{:?}", x )
+            }
+        }
+
+        surface.mark_dirty();
+    }
+
+    let mut screenshot_file = File::create("ss.png").unwrap();
+    let _ = surface.write_to_png(&mut screenshot_file);
+}
+
 fn make_theme_menu(
     image_info: &Rc< RefCell< ImageInfo > >,
     app_info: &Rc< RefCell< AppInfo > >
@@ -1535,7 +1658,7 @@ fn make_theme_menu(
 
     for ait in AppInfoTheme::iter()
     {
-        let menu_item = CheckMenuItem::with_label( ait.to_string().as_str() );
+        let menu_item = CheckMenuItem::with_label( ait.name().as_str() );
 
         menu_item.set_active( ait == app_info.borrow().theme );
 
@@ -2143,6 +2266,26 @@ fn make_popup_menu(
 
     menu.append( &menu_item_pref );
     menu.append( &SeparatorMenuItem::new() );
+
+    if app_info.borrow().time_disp_force.is_some()
+    {
+        let menu_item_snapshot = MenuItem::with_label( "Snapshot" );
+
+        {
+            let app_info = app_info.clone();
+            let image_info = image_info.clone();
+
+            menu_item_snapshot.connect_activate(
+                move |_| {
+                    make_png_image( &image_info.borrow(), &app_info.borrow() );
+                }
+            );
+        }
+
+        menu.append( &menu_item_snapshot );
+        menu.append( &SeparatorMenuItem::new() );
+    }
+
     menu.append( &menu_item_about );
     menu.append( &menu_item_quit );
 
@@ -2250,7 +2393,8 @@ fn main() {
                 da.connect_draw( move | da, cr |
                     {
                         update_region( &window, &image_info.borrow(), &mut app_info.borrow_mut() );
-                        draw_watch( &da, cr, &image_info.borrow(), &mut app_info.borrow_mut() );
+                        update_watch( &da, &mut app_info.borrow_mut() );
+                        draw_watch( cr, &image_info.borrow(), &app_info.borrow() );
                         gtk::glib::Propagation::Proceed
                     }
                 );
@@ -2266,7 +2410,7 @@ fn main() {
 
                 window.connect_button_press_event( move | window,  evt |
                     {
-                        log::debug!("pressed: {:?}", evt.button() );
+                        // log::debug!("pressed: {:?}", evt.button() );
 
                         let logo = load_logo();
 
