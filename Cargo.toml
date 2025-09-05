@@ -15,7 +15,7 @@ log = "0.4.27"
 toml = "0.9.5"
 serde = { version = "1.0.219", features = ["derive"] }
 
-# dependencies cairo-rs 0.18.2 
+# dependencies cairo-rs 0.18.2
 librsvg = "~2.57.3"
 
 quick-xml = "0.38.3"
@@ -27,6 +27,7 @@ chrono-tz = "0.10.4"
 linked-hash-map = "0.5.6"
 strum = { version = "0.27.2", features = ["derive"] }
 tween = "2.1.0"
+clap = { version = "4.5.47", features = ["derive"] }
 
 
 [profile.release]

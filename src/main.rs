@@ -15,7 +15,7 @@ use std::cell::RefCell;
 use std::sync::LazyLock;
 use std::f64::consts::PI;
 
-// use log::{Level, log_enabled};
+use log::{Level, log_enabled};
 
 use strum::{ IntoEnumIterator };
 
@@ -38,7 +38,7 @@ use gtk::gdk_pixbuf::Pixbuf;
 
 use rsvg::SvgHandle;
 
-use chrono::{ Local, Utc, NaiveDateTime, DateTime, TimeDelta, Timelike };
+use chrono::{ DateTime, Local, NaiveDateTime, TimeDelta, Timelike, Utc };
 
 use linked_hash_map::LinkedHashMap;
 
@@ -232,6 +232,7 @@ fn parse_xml_center( r_src: &mut FilterInputReader, target: FilterTarget ) -> Re
     let target_attr_key_label = "inkscape:label";
 
     let target_tag_ellipse = "ellipse";
+    let target_tag_circle = "circle";
     let target_attr_key_cx = "cx";
     let target_attr_key_cy = "cy";
 
@@ -299,7 +300,10 @@ fn parse_xml_center( r_src: &mut FilterInputReader, target: FilterTarget ) -> Re
 
                     if target_layer
                         && translate_affines.len() == 2
-                        && std::str::from_utf8(tag.name().as_ref()) == Ok(target_tag_ellipse)
+                        && (
+                                std::str::from_utf8(tag.name().as_ref()) == Ok(target_tag_ellipse)
+                            ||  std::str::from_utf8(tag.name().as_ref()) == Ok(target_tag_circle)
+                        )
                     {
                         let mut tran_affine = DAffine2::IDENTITY;
 
@@ -835,6 +839,8 @@ enum AppInfoFormatTime
     Fmt1
 ,   Fmt2
 ,   Fmt3
+,   Fmt4
+,   Fmt5
 ,   Custom
 }
 
@@ -849,25 +855,37 @@ impl AppInfoFormatTime
             Self::Fmt1 =>
                 (
                     "%r" /* Locale’s 12 hour clock time. (e.g., 11:11:04 PM). Falls back to %X if the locale does not have a 12 hour clock format. */
-                ,   "12 hour clock time (e.g., 11:11:04 PM)"
+                ,   "12 hour clock time with AM/PM (e.g., 11:11:04 PM)"
                 )
         ,   Self::Fmt2 =>
+                (
+                    "%I:%M:%S" /* Locale’s 12 hour clock time. (e.g., 11:11:04). Falls back to %X if the locale does not have a 12 hour clock format. */
+                ,   "12 hour clock time without AM/PM (e.g., 11:11:04)"
+                )
+        ,   Self::Fmt3 =>
                 (
                     "%T" /* Hour-minute-second format. Same as %H:%M:%S. */
                 ,   "Hour-minute-second (e.g., 23:11:04) "
                 )
-        ,   Self::Fmt3 =>
+        ,   Self::Fmt4 =>
                 (
                     "%R" /* Hour-minute format. Same as %H:%M. */
                 ,   "Hour-minute (e.g., 23:11)"
+                )
+        ,   Self::Fmt5 =>
+                (
+                    "%p"
+                ,   "AM/PM (e.g., AM)"
                 )
         ,   _ => ( "", "Custom" )
         }
     }
 }
 
+/*
 const FORMAT_TIME_HMS: &str = "%H:%M:%S";
 const FORMAT_TIME_AMPM: &str = "%p";
+*/
 
 #[derive(Debug, Serialize, Deserialize)]
 struct AppInfo
@@ -880,9 +898,9 @@ struct AppInfo
 ,   enable_text_time_zone: bool
 ,   enable_text_date: bool
 ,   enable_text_time: bool
-,   enable_text_time_ampm: bool
 ,   enable_text_time_segment: bool
 ,   enable_text_time_segment_hour12: bool
+,   enable_text_time_segment_dotblink: bool
 ,   text_format_date: AppInfoFormatDate
 ,   text_format_date_custom: Option< String >
 ,   text_format_time: AppInfoFormatTime
@@ -891,15 +909,17 @@ struct AppInfo
 ,   theme: AppInfoTheme
 ,   theme_custom: Option< String >
 ,   zoom: u32
+,   window_pos: Option< ( i32, i32 ) >
 ,   #[serde(skip)]
     zoom_update: bool
-,   window_pos: Option< ( i32, i32 ) >
 ,   #[serde(skip)]
     time_disp: NaiveDateTime
 ,   #[serde(skip)]
     time_disp_st: Option< ( NaiveDateTime, DateTime<Utc> ) >
 ,   #[serde(skip)]
     timer_sourceid: RefCell< Option< gtk::glib::SourceId > >
+,   #[serde(skip)]
+    time_disp_force: Option< NaiveDateTime >
 }
 
 impl AppInfo
@@ -916,9 +936,9 @@ impl AppInfo
         ,   enable_text_time_zone: true
         ,   enable_text_date: true
         ,   enable_text_time: true
-        ,   enable_text_time_ampm: true
         ,   enable_text_time_segment: true
         ,   enable_text_time_segment_hour12: false
+        ,   enable_text_time_segment_dotblink: true
         ,   text_format_date: AppInfoFormatDate::Fmt1
         ,   text_format_date_custom: None
         ,   text_format_time: AppInfoFormatTime::Fmt1
@@ -927,12 +947,13 @@ impl AppInfo
         ,   theme: AppInfoTheme::Theme1
         ,   theme_custom: None
         ,   zoom: 100
+        ,   window_pos: None
 
         ,   zoom_update: true
-        ,   window_pos: None
         ,   time_disp: DateTime::UNIX_EPOCH.naive_utc()
         ,   time_disp_st: None
         ,   timer_sourceid: RefCell::new( None )
+        ,   time_disp_force: None
         }
     }
 
@@ -995,7 +1016,11 @@ fn draw_watch<'a>(
     let time_now = Local::now();
 
     let time_now_naive =
-        if app_info.time_zone == ""
+        if app_info.time_disp_force.is_some()
+        {
+            app_info.time_disp_force.as_ref().unwrap().clone()
+        }
+        else if app_info.time_zone == ""
         {
             time_now.naive_local()
         }
@@ -1050,6 +1075,8 @@ fn draw_watch<'a>(
             }
        }
        ;
+
+
 
     let has_time_disp_st = app_info.time_disp_st.is_some();
 
@@ -1126,6 +1153,11 @@ fn draw_watch<'a>(
     let angle_sec_delta = if app_info.enable_second_hand_smoothly { time_now.timestamp_subsec_millis() as f64 / 1000.0 } else { 0.0 };
     let angle_sec = ( time_now.second() as f64 + angle_sec_delta ) / 60.0 * 360.0;
 
+    // paint base BLACK
+    cctx.rectangle( viewport.x(), viewport.y(), viewport.width(), viewport.height() );
+    cctx.set_source_rgb(0.0, 0.0, 0.0);
+    let _ = cctx.fill();
+
     // render base
     if let Some( x ) = image_info.svgh_base.as_ref()
     {
@@ -1154,7 +1186,14 @@ fn draw_watch<'a>(
         static RE_SEGMENT_AMPM: LazyLock<regex::bytes::Regex> = LazyLock::new(
             ||
             {
-                regex::bytes::Regex::new(r"(?i)seg_(am|pm)").unwrap()
+                regex::bytes::Regex::new(r"(?i)seg_(amb|pmb|am|pm)").unwrap()
+            }
+        );
+
+        static RE_SEGMENT_DOT: LazyLock<regex::bytes::Regex> = LazyLock::new(
+            ||
+            {
+                regex::bytes::Regex::new(r"(?i)seg_dot").unwrap()
             }
         );
 
@@ -1176,7 +1215,7 @@ fn draw_watch<'a>(
 
                 b"time_zone" =>
                 {
-                    if !app_info.enable_text_time_zone
+                    if app_info.enable_text_time_zone
                     {
                         buf.extend_from_slice( app_info.time_zone.as_bytes() );
                     }
@@ -1223,6 +1262,7 @@ fn draw_watch<'a>(
                         }
                     }
                 }
+                /*
                 b"time_hms" =>
                 {
                     if app_info.enable_text_time
@@ -1237,6 +1277,7 @@ fn draw_watch<'a>(
                         buf.extend_from_slice( app_info.time_disp.format( FORMAT_TIME_AMPM ).to_string().as_bytes() );
                     }
                 }
+                */
                 _ =>
                 {
                     if app_info.enable_text_time_segment
@@ -1260,11 +1301,11 @@ fn draw_watch<'a>(
 
                                 $2 = a,b,c,d,e,f,g
                                     segment https://en.wikipedia.org/wiki/Seven-segment_display#/media/File:7_Segment_Display_with_Labeled_Segments.svg
-                                    =a=
+                                       =a=
                                     |f|   |b|
-                                    =g=
+                                       =g=
                                     |e|   |c|
-                                    =d=
+                                       =d=
                             */
 
                             let m1 = caps.get(1).unwrap();
@@ -1306,13 +1347,13 @@ fn draw_watch<'a>(
                             let b_mask: u8 =
                                 match m2.as_bytes()
                                 {
-                                    b"a" => { 0x1 << 7 }
-                                ,   b"b" => { 0x1 << 6 }
-                                ,   b"c" => { 0x1 << 5 }
-                                ,   b"d" => { 0x1 << 4 }
-                                ,   b"e" => { 0x1 << 3 }
-                                ,   b"f" => { 0x1 << 2 }
-                                ,   b"g" => { 0x1 << 1 }
+                                    b"a" => { 0x1 << 6 }
+                                ,   b"b" => { 0x1 << 5 }
+                                ,   b"c" => { 0x1 << 4 }
+                                ,   b"d" => { 0x1 << 3 }
+                                ,   b"e" => { 0x1 << 2 }
+                                ,   b"f" => { 0x1 << 1 }
+                                ,   b"g" => { 0x1 << 0 }
                                 ,   _ => { 0x0u8 }
                                 };
 
@@ -1326,23 +1367,44 @@ fn draw_watch<'a>(
                                     b"hidden"
                                 }
                             );
+
+                            /*
+                            if log_enabled!(Level::Debug)
+                            {
+                                if m1.as_bytes() == b"sl"
+                                {
+                                    let c = String::from_utf8( m2.as_bytes().to_vec() );
+
+                                    debug!("{}:{:?}:{:02X}:{:02X}:{}", num, c, b_on, b_mask, b_on & b_mask );
+                                }
+                            }
+                            */
                         }
                         else if let Some( caps ) = RE_SEGMENT_AMPM.captures( kw.as_slice() )
                         {
                             /*
                                 <g visibility="{{seg_am}}"></g>
                                 <g visibility="{{seg_pm}}"></g>
+                                <g visibility="{{seg_amb}}"></g>
+                                <g visibility="{{seg_pmb}}"></g>
 
-                                {{seg_am}}, {{seg_pm}} = "visible" or "hidden"
+                                {{seg_am}}, {{seg_pm}}, {{seg_amb}}, {{seg_pmb}} = "visible" or "hidden"
                             */
-
-                            let is_am = app_info.time_disp.hour() >= 12;
+                            let is_enable = app_info.enable_text_time_segment_hour12;
+                            let is_pm = app_info.time_disp.hour() >= 12;
 
                             let m1 = caps.get(1).unwrap();
 
+                            // debug!("{:?}", String::from_utf8( m1.as_bytes().to_vec() ) );
+
                             buf.extend_from_slice(
-                                if      is_am && m1.as_bytes() == b"am"
-                                    ||  !is_am && m1.as_bytes() == b"pm"
+                                if  is_enable &&
+                                    (
+                                        !is_pm && m1.as_bytes() == b"am"
+                                    ||  is_pm && m1.as_bytes() == b"pm"
+                                    ||  m1.as_bytes() == b"amb"
+                                    ||  m1.as_bytes() == b"pmb"
+                                    )
                                 {
                                     b"visible"
                                 }
@@ -1351,6 +1413,27 @@ fn draw_watch<'a>(
                                     b"hidden"
                                 }
                             );
+                        }
+                        else if let Some( _ ) = RE_SEGMENT_DOT.captures( kw.as_slice() )
+                        {
+                            /*
+                                <g visibility="{{seg_dot}}"></g>
+
+                                {{seg_dot}} = "visible" or "hidden"
+                            */
+
+                            let is_on =
+                                if app_info.enable_text_time_segment_dotblink
+                                {
+                                    app_info.time_disp.and_utc().timestamp_subsec_millis() < 500
+                                }
+                                else
+                                {
+                                    true
+                                }
+                                ;
+
+                            buf.extend_from_slice( if is_on { b"visible" } else { b"hidden" } );
                         }
                     }
                 }
@@ -1694,13 +1777,6 @@ fn make_text_visibility_menu(
     let menu = Menu::new();
 
     let menu_item_enable_text_time_zone = CheckMenuItem::with_label( "Enable Time Zone" );
-    let menu_item_enable_text_date = CheckMenuItem::with_label( "Enable Date" );
-    let menu_item_enable_text_time = CheckMenuItem::with_label( "Enable Time" );
-    let menu_item_enable_text_time_ampm = CheckMenuItem::with_label( "Enable Time AM/PM" );
-    let menu_item_enable_text_time_segment = CheckMenuItem::with_label( "Enable Time Segment" );
-    let menu_item_enable_text_time_segment_hour12 = CheckMenuItem::with_label( "Enable Time Segment Hour 12" );
-    let menu_item_text_format_date = MenuItem::with_label( "Formant Date" );
-    let menu_item_text_format_time = MenuItem::with_label( "Formant Time" );
 
     menu_item_enable_text_time_zone.set_active( app_info.borrow().enable_text_time_zone );
 
@@ -1717,6 +1793,8 @@ fn make_text_visibility_menu(
         );
     }
 
+    let menu_item_enable_text_date = CheckMenuItem::with_label( "Enable Date" );
+
     menu_item_enable_text_date.set_active( app_info.borrow().enable_text_date );
 
     {
@@ -1731,6 +1809,8 @@ fn make_text_visibility_menu(
             }
         );
     }
+
+    let menu_item_enable_text_time = CheckMenuItem::with_label( "Enable Time" );
 
     menu_item_enable_text_time.set_active( app_info.borrow().enable_text_time );
 
@@ -1747,6 +1827,9 @@ fn make_text_visibility_menu(
         );
     }
 
+    /*
+    let menu_item_enable_text_time_ampm = CheckMenuItem::with_label( "Enable Time AM/PM" );
+
     menu_item_enable_text_time_ampm.set_active( app_info.borrow().enable_text_time_ampm );
 
     {
@@ -1761,6 +1844,9 @@ fn make_text_visibility_menu(
             }
         );
     }
+    */
+
+    let menu_item_enable_text_time_segment = CheckMenuItem::with_label( "Enable Time Segment" );
 
     menu_item_enable_text_time_segment.set_active( app_info.borrow().enable_text_time_segment );
 
@@ -1777,6 +1863,8 @@ fn make_text_visibility_menu(
         );
     }
 
+    let menu_item_enable_text_time_segment_hour12 = CheckMenuItem::with_label( "Enable Time Segment Hour 12" );
+
     menu_item_enable_text_time_segment_hour12.set_active( app_info.borrow().enable_text_time_segment_hour12 );
 
     {
@@ -1791,6 +1879,25 @@ fn make_text_visibility_menu(
             }
         );
     }
+
+    let menu_item_enable_text_time_segment_dotblink = CheckMenuItem::with_label( "Enable Time Segment dot blink" );
+
+    menu_item_enable_text_time_segment_dotblink.set_active( app_info.borrow().enable_text_time_segment_dotblink );
+
+    {
+        let da = da.clone();
+        let app_info = app_info.clone();
+
+        menu_item_enable_text_time_segment_dotblink.connect_activate( move |_|
+            {
+                let mut app_info = app_info.borrow_mut();
+                app_info.enable_text_time_segment_dotblink = !app_info.enable_text_time_segment_dotblink;
+                da.queue_draw();
+            }
+        );
+    }
+
+    let menu_item_text_format_date = MenuItem::with_label( "Formant Date" );
 
     let menu_text_format_date = Menu::new();
 
@@ -1817,6 +1924,8 @@ fn make_text_visibility_menu(
     }
 
     menu_item_text_format_date.set_submenu( Some( &menu_text_format_date ) );
+
+    let menu_item_text_format_time = MenuItem::with_label( "Formant Time" );
 
     let menu_text_format_time = Menu::new();
 
@@ -1847,7 +1956,7 @@ fn make_text_visibility_menu(
     menu.append( &menu_item_enable_text_time_zone );
     menu.append( &menu_item_enable_text_date );
     menu.append( &menu_item_enable_text_time );
-    menu.append( &menu_item_enable_text_time_ampm );
+//    menu.append( &menu_item_enable_text_time_ampm );
     menu.append( &menu_item_enable_text_time_segment );
     menu.append( &menu_item_enable_text_time_segment_hour12 );
     menu.append( &SeparatorMenuItem::new() );
@@ -2040,7 +2149,7 @@ fn make_popup_menu(
     menu
 }
 
-const UPDATE_CYCLE_SLOW: u64 = 125;
+const UPDATE_CYCLE_SLOW: u64 = 100;
 const UPDATE_CYCLE_FAST: u64 = 25;
 
 fn get_timer_interval( is_fast: bool ) -> u64
@@ -2048,6 +2157,7 @@ fn get_timer_interval( is_fast: bool ) -> u64
     if is_fast { UPDATE_CYCLE_FAST } else { UPDATE_CYCLE_SLOW }
 }
 fn main() {
+
     pretty_env_logger::init();
 
     let app_info_file = ".hello_gtk";
