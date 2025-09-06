@@ -15,6 +15,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::sync::LazyLock;
 use std::f64::consts::PI;
+use std::collections::HashMap;
 
 // use log::{Level, log_enabled};
 
@@ -710,9 +711,8 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
                 if let Some( theme_custom ) = theme_custom
                 {
                     let mut src_buf = Vec::<u8>::new();
-                    let src = File::open(theme_custom );
 
-                    if let Ok( mut src ) = src
+                    if let Ok( mut src ) = File::open(theme_custom )
                     {
                         if let Ok(_) = src.read_to_end( &mut src_buf )
                         {
@@ -727,10 +727,16 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
             _ =>
             {
                 let mut src_buf = Vec::<u8>::new();
-                let mut src = File::open(theme.source() ).unwrap();
-                src.read_to_end( &mut src_buf ).unwrap();
 
-                Some( src_buf )
+                if let Ok( mut src ) = File::open(theme.source() )
+                {
+                    if let Ok(_) = src.read_to_end( &mut src_buf )
+                    {
+                        Some( src_buf )
+                    }
+                    else { None }
+                }
+                else { None }
             }
         }
         ;
@@ -910,7 +916,7 @@ fn load_logo() -> Option< Pixbuf >
     None
 }
 
-#[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
+#[derive(Debug, PartialEq, Eq, Hash, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
 enum AppInfoTheme
 {
     Theme1
@@ -924,6 +930,7 @@ enum AppInfoTheme
 
 impl AppInfoTheme
 {
+    /*
     fn name( &self ) -> String
     {
         match self
@@ -934,6 +941,7 @@ impl AppInfoTheme
         ,   _ => format!( "[{}]", self.to_string() )
         }
     }
+    */
 
     fn source( &self ) -> &str
     {
@@ -1080,11 +1088,13 @@ struct AppInfo
     timer_sourceid: RefCell< Option< gtk::glib::SourceId > >
 ,   #[serde(skip)]
     time_disp_force: Option< NaiveTime >
+,   #[serde(skip)]
+    theme_names: HashMap< AppInfoTheme, ( Option< String >, Option< String > ) >
 }
 
 impl AppInfo
 {
-    const fn new() -> Self {
+    fn new() -> Self {
 
         Self
         {
@@ -1114,6 +1124,7 @@ impl AppInfo
         ,   time_disp_st: None
         ,   timer_sourceid: RefCell::new( None )
         ,   time_disp_force: None
+        ,   theme_names: HashMap::new()
         }
     }
 
@@ -1155,6 +1166,38 @@ impl AppInfo
                 None
             }
             ;
+
+        // theme loading
+
+        for theme in AppInfoTheme::iter()
+        {
+            if let Some( image_info ) = load_theme( theme, self.theme_custom.clone() )
+            {
+                let mut name = image_info.config.theme_name;
+                let mut desc = image_info.config.theme_description;
+
+                if let Some( x ) = &name
+                {
+                    if x == ""
+                    {
+                        name = None
+                    }
+                }
+
+                if let Some( x ) = &desc
+                {
+                    if x == ""
+                    {
+                        desc = None
+                    }
+                }
+
+                self.theme_names.insert( theme,( name, desc ) );
+            }
+        }
+
+        debug!( "theme_names: {:?}", self.theme_names );
+
     }
 }
 
@@ -1865,9 +1908,34 @@ fn make_theme_menu(
 
     for ait in AppInfoTheme::iter()
     {
-        let menu_item = CheckMenuItem::with_label( ait.name().as_str() );
+        let exist: bool = app_info.borrow().theme_names.contains_key( &ait );
+
+        let name: String =
+            if let Some( entry ) = app_info.borrow().theme_names.get( &ait )
+            {
+                if let Some( name ) = &entry.0 && let Some( desc ) = &entry.1
+                {
+                    format!( "[{}] {} / {}", ait.to_string(), name, desc )
+                }
+                else if let Some( name ) = &entry.0
+                {
+                    format!( "[{}] {}", ait.to_string(), name )
+                }
+                else
+                {
+                    format!( "[{}]", ait.to_string() )
+                }
+            }
+            else
+            {
+                format!( "[{}]", ait.to_string() )
+            }
+            ;
+
+        let menu_item = CheckMenuItem::with_label( name.as_str() );
 
         menu_item.set_active( ait == app_info.borrow().theme );
+        menu_item.set_sensitive( exist );
 
         {
             let app_info = app_info.clone();
@@ -1883,11 +1951,6 @@ fn make_theme_menu(
                     image_info.replace( load_theme( app_info.theme, app_info.theme_custom.clone() ).unwrap() );
                 }
             );
-        }
-
-        if ait == AppInfoTheme::Custom
-        {
-            menu_item.set_sensitive( app_info.borrow().theme_custom.is_some() );
         }
 
         menu.append( &menu_item );

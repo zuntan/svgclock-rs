@@ -29,11 +29,11 @@
      inkscape:document-units="px"
      showgrid="false"
      inkscape:zoom="2.8804305"
-     inkscape:cx="26.21136"
-     inkscape:cy="275.13248"
+     inkscape:cx="25.169849"
+     inkscape:cy="219.9324"
      inkscape:window-width="1965"
      inkscape:window-height="1248"
-     inkscape:window-x="577"
+     inkscape:window-x="313"
      inkscape:window-y="90"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer10" />
@@ -605,26 +605,26 @@
        y="79.268623"
        id="text12028"><tspan
          sodipodi:role="line"
-         id="tspan1168">#toml</tspan><tspan
+         id="tspan402">#toml</tspan><tspan
          sodipodi:role="line"
-         id="tspan1170">theme_name = &quot;Simple&quot;</tspan><tspan
+         id="tspan404">theme_name = &quot;Classic&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan1172">theme_description = &quot;very simple&quot;</tspan><tspan
+         id="tspan406">theme_description = &quot;With sub second.&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan1174">with_second = true</tspan><tspan
+         id="tspan408">with_second = true</tspan><tspan
          sodipodi:role="line"
-         id="tspan1176">with_sub_second = false</tspan><tspan
+         id="tspan410">with_sub_second = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan1178">with_text_time_zone = false</tspan><tspan
+         id="tspan412">with_text_time_zone = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan1180">with_text_date = false</tspan><tspan
+         id="tspan414">with_text_date = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan1182">with_text_time = false</tspan><tspan
+         id="tspan416">with_text_time = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan1184">with_text_segment = false</tspan><tspan
+         id="tspan418">with_text_segment = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan1186"></tspan><tspan
+         id="tspan420"></tspan><tspan
          sodipodi:role="line"
-         id="tspan1188"></tspan></text>
+         id="tspan422"></tspan></text>
   </g>
 </svg>
