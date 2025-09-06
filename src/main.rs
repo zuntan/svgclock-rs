@@ -23,7 +23,7 @@ use strum::{ IntoEnumIterator };
 use serde::{Deserialize, Serialize};
 
 use glam::{DAffine2, DMat2, DVec2, IVec2};
-use quick_xml::events::BytesStart;
+use quick_xml::events::{BytesRef, BytesStart};
 use regex::Regex;
 
 use gtk::{ prelude::* };
@@ -42,6 +42,28 @@ use rsvg::SvgHandle;
 use chrono::{ DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike, Utc };
 
 use linked_hash_map::LinkedHashMap;
+
+fn to_char( br: &BytesRef ) -> Option< char >
+{
+    if let Ok( x ) = br.resolve_char_ref() && let Some( x ) = x
+    {
+        return Some( x );
+    }
+    else if let Ok( x ) = br.xml_content()
+    {
+        match x.to_lowercase().as_str()
+        {
+            "amp" => { return Some('&'); }
+        ,   "gt" => { return Some('>'); }
+        ,   "lt" => { return Some('<'); }
+        ,   "quot" => { return Some('"'); }
+        ,   "nbsp" => { return Some(' '); }
+        ,   _ => {}
+        }
+    }
+
+    None
+}
 
 fn parse_float_list(val: &str) -> Vec<f64> {
 
@@ -235,49 +257,26 @@ fn parse_xml_config(
                     }
                 },
                 Ok(quick_xml::events::Event::Text( inner)) => {
-                    debug!("{:?}", std::str::from_utf8( inner.as_ref()) );
-
                     text += std::str::from_utf8( inner.as_ref() ).unwrap();
                 },
                 Ok(quick_xml::events::Event::CData( inner)) => {
                     text += std::str::from_utf8( inner.as_ref() ).unwrap();
                 },
                 Ok(quick_xml::events::Event::GeneralRef( inner)) => {
-
-                    if let Ok( x ) = inner.resolve_char_ref() && let Some( x ) = x
+                    if let Some( x ) = to_char( &inner )
                     {
-                        debug!("resolve_char_ref {:?}", x );
-                        text += x;
-                    }
-                    /*
-                    else if let Ok( x ) = inner.xml_content()
-                    {
-                        debug!("xml_content {:?}", x );
-                        //text += x;
-                    }
-                    */
-                    else
-                    {
-                        text += std::str::from_utf8( inner.as_ref() ).unwrap();
+                        text.push(  x );
                     }
                 },
-                Ok( x ) =>
-                {
-                    debug!("{:?}", x );
-                }
                 Err( x ) => { return Err( Box::new( x ) ); }
                 _ => {}
             }
         }
 
-        debug!( "text : {:?}",  text );
-
         Ok( text )
     }
 
     let target_tag = "text".as_bytes();
-    let target_attr_key_label = "inkscape:label".as_bytes();
-    let target_attr_value_config = "config".as_bytes();
 
     let mut text = String::new();
 
@@ -291,17 +290,12 @@ fn parse_xml_config(
             Ok(quick_xml::events::Event::Start(ref tag)) => {
                 if tag.name().as_ref() == target_tag
                 {
-                    if let Ok(attr) = tag.try_get_attribute(target_attr_key_label)
-                        && let Some(attr) = attr
-                        && attr.value == target_attr_value_config
+                    match func_get_text( &mut r_src )
                     {
-                        match func_get_text( &mut r_src )
-                        {
-                            Ok( x ) => { text += &x; },
-                            Err( x ) => { return Err( x ); }
-                        }
-                        break;
+                        Ok( x ) => { text += &x; },
+                        Err( x ) => { return Err( x ); }
                     }
+                    break;
                 }
             },
             _ => {}
@@ -347,7 +341,9 @@ enum LayerTarget {
     #[strum(to_string = "sub_second_handle")]
     SubSecondHandle,
     #[strum(to_string = "sub_second_center_circle")]
-    SubSecondCenterCircle
+    SubSecondCenterCircle,
+    #[strum(to_string = "config")]
+    Config
 }
 
 fn parse_xml_center(
@@ -760,6 +756,7 @@ fn load_xml( src_buf: &Vec<u8> ) -> ImageInfo
     let src_sub_second_base = filter_xml( src_buf,LayerTarget::SubSecondBase );
     let src_sub_second_handle = filter_xml( src_buf,LayerTarget::SubSecondHandle );
     let src_sub_second_center_circle = filter_xml( src_buf,LayerTarget::SubSecondCenterCircle );
+    let src_config = filter_xml( src_buf,LayerTarget::Config );
 
     let fn_make_svg_handle = | src_xml : &Vec<u8> |
     {
@@ -778,13 +775,19 @@ fn load_xml( src_buf: &Vec<u8> ) -> ImageInfo
 
     let mut ret = ImageInfo::new();
 
-    if let Ok( config ) = parse_xml_config( src_buf )
+    if let Ok( src_xml ) = src_config
     {
-        debug!( "config {:?}", config );
+        if let Ok( config ) = parse_xml_config( &src_xml )
+        {
+            debug!( "config load   {:?}", config );
 
-        let mut config = config;
-        config.update_default();
-        ret.config = config;
+            let mut config = config;
+            config.update_default();
+
+            debug!( "config update {:?}", config );
+
+            ret.config = config;
+        }
     }
 
     if let Ok(src_xml) = src_base {
@@ -905,69 +908,6 @@ fn load_logo() -> Option< Pixbuf >
     }
 
     None
-}
-
-fn make_region( image_info: &ImageInfo, sz: DVec2 ) -> Option< Region >
-{
-    if let Some(src_xml) = image_info.bytes_base.as_ref()
-        && image_info.sz.x > 0
-        && image_info.sz.y > 0
-        && sz.x > 0.0
-        && sz.y > 0.0
-    {
-        let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(src_xml));
-        let svg_handle = rsvg::Loader::new()
-            .read_stream(
-                &svg_stream,
-                None::<&gtk::gio::File>,
-                None::<&gtk::gio::Cancellable>,
-            )
-            .unwrap();
-        let svg_renderer = rsvg::CairoRenderer::new(&svg_handle);
-
-        let surface_mask = ImageSurface::create(Format::A8, sz.x as i32, sz.y as i32 ).unwrap();
-
-        let cctx = Context::new(&surface_mask).unwrap();
-
-        let viewport = Rectangle::new(0.0, 0.0, sz.x, sz.y );
-
-        debug!("viewport:{:?}", viewport);
-
-        svg_renderer.render_document(&cctx, &viewport).unwrap();
-
-        let mut mask_file = File::create("mask.png").unwrap();
-
-        surface_mask.write_to_png(&mut mask_file).unwrap();
-
-        surface_mask.create_region()
-    }
-    else
-    {
-        None
-    }
-}
-
-fn update_region<'a>( window: &'a ApplicationWindow, image_info: &'a ImageInfo, app_info: &'a mut AppInfo )
-{
-    if app_info.zoom_update
-    {
-        if  image_info.sz.x > 0
-        &&  image_info.sz.y > 0
-        &&  app_info.zoom > 0
-        {
-            let zoom_factor = app_info.zoom as f64 / 100.0;
-
-            let sz = DVec2::new(
-                image_info.sz.x as f64 * zoom_factor
-            ,   image_info.sz.y as f64 * zoom_factor
-            );
-
-            window.resize( sz.x as i32, sz.y as i32 );
-            window.shape_combine_region( make_region( &image_info, sz ).as_ref() );
-
-            app_info.zoom_update = false;
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
@@ -1219,7 +1159,6 @@ impl AppInfo
 }
 
 const MOVE_FAST_SECS: i64 = 5;
-const ENABLE_ROTATE_CENTER_CIRCLE: bool = false;
 
 fn update_watch( da: &DrawingArea, app_info: &mut AppInfo )
 {
@@ -1354,8 +1293,62 @@ fn update_watch( da: &DrawingArea, app_info: &mut AppInfo )
     }
 }
 
+fn update_region<'a>( window: &'a ApplicationWindow, image_info: &'a ImageInfo, app_info: &'a mut AppInfo )
+{
+    if  image_info.sz.x > 0
+    &&  image_info.sz.y > 0
+    &&  app_info.zoom > 0
+    {
+        let zoom_factor = app_info.zoom as f64 / 100.0;
+
+        let sz = DVec2::new(
+            image_info.sz.x as f64 * zoom_factor
+        ,   image_info.sz.y as f64 * zoom_factor
+        );
+
+        if app_info.zoom_update
+        {
+            window.resize( sz.x as i32, sz.y as i32 );
+            window.shape_combine_region( make_region( &image_info, app_info ).as_ref() );
+            app_info.zoom_update = false;
+        }
+        else if let Some( x ) = image_info.config.enable_update_region_every_time && x
+        {
+            window.shape_combine_region( make_region( &image_info, app_info ).as_ref() );
+        }
+    }
+}
+
+
+fn make_region( image_info : &ImageInfo, app_info: &AppInfo ) -> Option< Region >
+{
+    let zoom_factor = app_info.zoom as f64 / 100.0;
+
+    let sz = DVec2::new(
+        image_info.sz.x as f64 * zoom_factor
+    ,   image_info.sz.y as f64 * zoom_factor
+    );
+
+    if     image_info.sz.x > 0
+        && image_info.sz.y > 0
+        && sz.x > 0.0
+        && sz.y > 0.0
+    {
+        let surface_mask = ImageSurface::create(Format::A8, sz.x as i32, sz.y as i32 ).unwrap();
+        let cctx = Context::new(&surface_mask).unwrap();
+
+        draw_watch( &cctx, image_info, app_info, true );
+
+        surface_mask.create_region()
+    }
+    else
+    {
+        None
+    }
+}
+
 fn draw_watch(
-    cctx : &Context, image_info : &ImageInfo, app_info: &AppInfo )
+    cctx : &Context, image_info : &ImageInfo, app_info: &AppInfo, for_region: bool )
 {
     let zoom_factor = app_info.zoom as f64 / 100.0;
 
@@ -1418,20 +1411,30 @@ fn draw_watch(
     let angle_sec_delta = if app_info.enable_second_hand_smoothly { time_now.timestamp_subsec_millis() as f64 / 1000.0 } else { 0.0 };
     let angle_sec = ( time_now.second() as f64 + angle_sec_delta ) / 60.0 * 360.0;
 
-    // paint base BLACK
-    cctx.rectangle( viewport.x(), viewport.y(), viewport.width(), viewport.height() );
-    cctx.set_source_rgb(0.0, 0.0, 0.0);
-    let _ = cctx.fill();
+    // paint base BLACK ( for not region )
+    if !for_region
+    {
+        cctx.rectangle( viewport.x(), viewport.y(), viewport.width(), viewport.height() );
+        cctx.set_source_rgb(0.0, 0.0, 0.0);
+        let _ = cctx.fill();
+    }
 
     // render base
-    if let Some( x ) = image_info.svgh_base.as_ref()
+    if let Some( svgh ) = image_info.svgh_base.as_ref()
     {
-        let svg_renderer = rsvg::CairoRenderer::new(x);
+        let svg_renderer = rsvg::CairoRenderer::new(svgh);
         svg_renderer.render_document(cctx, &viewport).unwrap();
     }
 
     // render sub_base_text
-    if let Some( x ) = image_info.bytes_base_text.as_ref()
+
+    let with_text_time_zone = if let Some( x ) = image_info.config.with_text_time_zone && x { true } else { false };
+    let with_text_date = if let Some( x ) = image_info.config.with_text_date && x { true } else { false };
+    let with_text_time = if let Some( x ) = image_info.config.with_text_time && x { true } else { false };
+    let with_text_segment = if let Some( x ) = image_info.config.with_text_segment && x { true } else { false };
+
+    if ( with_text_time_zone || with_text_date || with_text_time || with_text_segment )
+    && let Some( x ) = image_info.bytes_base_text.as_ref()
     {
         // text replace
         static RE_REPLACE: LazyLock<regex::bytes::Regex> = LazyLock::new(
@@ -1480,14 +1483,14 @@ fn draw_watch(
 
                 b"time_zone" =>
                 {
-                    if app_info.enable_text_time_zone
+                    if with_text_time_zone && app_info.enable_text_time_zone
                     {
                         buf.extend_from_slice( app_info.time_zone.as_bytes() );
                     }
                 }
                 b"date" =>
                 {
-                    if app_info.enable_text_date
+                    if with_text_date && app_info.enable_text_date
                     {
                         if app_info.text_format_date == AppInfoFormatDate::Custom && app_info.text_format_date_custom.is_some()
                         {
@@ -1508,7 +1511,7 @@ fn draw_watch(
                 }
                 b"time" =>
                 {
-                    if app_info.enable_text_time
+                    if with_text_time && app_info.enable_text_time
                     {
                         if app_info.text_format_time == AppInfoFormatTime::Custom && app_info.text_format_time_custom.is_some()
                         {
@@ -1545,7 +1548,7 @@ fn draw_watch(
                 */
                 _ =>
                 {
-                    if app_info.enable_text_time_segment
+                    if with_text_segment && app_info.enable_text_time_segment
                     {
                         if let Some( caps ) = RE_SEGMENT_NUM.captures( kw.as_slice() )
                         {
@@ -1726,73 +1729,79 @@ fn draw_watch(
     }
 
     // render sub_second
-    if app_info.show_seconds && app_info.enable_sub_second_hand
+    if      app_info.show_seconds
+        &&  app_info.enable_sub_second_hand
+        &&  let Some(x) = image_info.config.with_sub_second
+        &&  x
     {
         // render sub_second_base
-        if let Some( x ) = image_info.svgh_sub_second_base.as_ref()
+        if let Some( svgh ) = image_info.svgh_sub_second_base.as_ref()
         {
-            let svg_renderer = rsvg::CairoRenderer::new(x);
+            let svg_renderer = rsvg::CairoRenderer::new(svgh);
             svg_renderer.render_document(cctx, &viewport).unwrap();
         }
 
         // render sub_second_handle
-        if let Some( x ) = image_info.svgh_sub_second_handle.as_ref()
+        if let Some( svgh ) = image_info.svgh_sub_second_handle.as_ref()
         {
-            func_render_rotate( x, &center_sub_second, angle_sec );
+            func_render_rotate( svgh, &center_sub_second, angle_sec );
         }
 
         // render sub_second_center_circle
-        if let Some( x ) = image_info.svgh_sub_second_center_circle.as_ref()
+        if let Some( svgh ) = image_info.svgh_sub_second_center_circle.as_ref()
         {
-            if ENABLE_ROTATE_CENTER_CIRCLE
+            if let Some( x ) = image_info.config.enable_rotate_center_circle && x
             {
-                func_render_rotate( x, &center_sub_second, angle_sec );
+                func_render_rotate( svgh, &center_sub_second, angle_sec );
             }
             else
             {
-                func_render( x );
+                func_render( svgh );
             }
         }
     }
 
     // render long_handle
-    if let Some( x ) = image_info.svgh_long_handle.as_ref()
+    if let Some( svgh ) = image_info.svgh_long_handle.as_ref()
     {
-        func_render_rotate( x, &center, angle_min );
+        func_render_rotate( svgh, &center, angle_min );
     }
 
     // render short_handle
-    if let Some( x ) = image_info.svgh_short_handle.as_ref()
+    if let Some( svgh ) = image_info.svgh_short_handle.as_ref()
     {
-        func_render_rotate( x, &center, angle_hour );
+        func_render_rotate( svgh, &center, angle_hour );
     }
 
     // render second_handle
-    if app_info.show_seconds && !app_info.enable_sub_second_hand
+    if      app_info.show_seconds
+        && !app_info.enable_sub_second_hand
+        &&  let Some( x ) = image_info.config.with_second
+        &&  x
     {
-        if let Some( x ) = image_info.svgh_second_handle.as_ref()
+        if let Some( svgh ) = image_info.svgh_second_handle.as_ref()
         {
-            func_render_rotate( x, &center, angle_sec );
+            func_render_rotate( svgh, &center, angle_sec );
         }
     }
 
     // render center_circle
-    if let Some( x ) = image_info.svgh_center_circle.as_ref()
+    if let Some( svgh ) = image_info.svgh_center_circle.as_ref()
     {
-        if ENABLE_ROTATE_CENTER_CIRCLE
+        if let Some( x ) = image_info.config.enable_rotate_center_circle && x
         {
-            func_render_rotate( x, &center, angle_sec );
+            func_render_rotate( svgh, &center, angle_sec );
         }
         else
         {
-            func_render( x );
+            func_render( svgh );
         }
     }
 
 }
 
 fn make_png_image(
-    image_info : &ImageInfo, app_info: &AppInfo )
+    image_info : &ImageInfo, app_info: &mut AppInfo )
 {
     let zoom_factor = app_info.zoom as f64 / 100.0;
 
@@ -1805,11 +1814,11 @@ fn make_png_image(
 
     {
         let cctx = Context::new(&surface).unwrap();
-        draw_watch( &cctx, image_info, app_info );
+        draw_watch( &cctx, image_info, app_info, false );
         surface.flush();
     }
 
-    if  let Some( region ) = make_region( image_info, sz )
+    if  let Some( region ) = make_region( image_info, app_info )
     {
         let h = surface.height();
         let w = surface.width();
@@ -2092,13 +2101,28 @@ fn make_timezone_menu(
 
 fn make_text_visibility_menu(
     da: &DrawingArea,
-    app_info: &Rc< RefCell< AppInfo > >
+    app_info: &Rc< RefCell< AppInfo > >,
+    image_info: &Rc< RefCell< ImageInfo > >
 ) -> Menu
 {
+    let with_time_zone =
+        if let Some( x ) = image_info.borrow().config.with_text_time_zone && x { true } else { false }
+        ;
+    let with_date =
+        if let Some( x ) = image_info.borrow().config.with_text_date && x { true } else { false }
+        ;
+    let with_time =
+        if let Some( x ) = image_info.borrow().config.with_text_time && x { true } else { false }
+        ;
+    let with_segment =
+        if let Some( x ) = image_info.borrow().config.with_text_segment && x { true } else { false }
+        ;
+
     let menu = Menu::new();
 
     let menu_item_enable_text_time_zone = CheckMenuItem::with_label( "Enable Time Zone" );
 
+    menu_item_enable_text_time_zone.set_sensitive( with_time_zone );
     menu_item_enable_text_time_zone.set_active( app_info.borrow().enable_text_time_zone );
 
     {
@@ -2116,6 +2140,7 @@ fn make_text_visibility_menu(
 
     let menu_item_enable_text_date = CheckMenuItem::with_label( "Enable Date" );
 
+    menu_item_enable_text_date.set_sensitive( with_date );
     menu_item_enable_text_date.set_active( app_info.borrow().enable_text_date );
 
     {
@@ -2133,6 +2158,7 @@ fn make_text_visibility_menu(
 
     let menu_item_enable_text_time = CheckMenuItem::with_label( "Enable Time" );
 
+    menu_item_enable_text_time.set_sensitive( with_time );
     menu_item_enable_text_time.set_active( app_info.borrow().enable_text_time );
 
     {
@@ -2169,6 +2195,7 @@ fn make_text_visibility_menu(
 
     let menu_item_enable_text_time_segment = CheckMenuItem::with_label( "Enable Time Segment" );
 
+    menu_item_enable_text_time_segment.set_sensitive( with_segment );
     menu_item_enable_text_time_segment.set_active( app_info.borrow().enable_text_time_segment );
 
     {
@@ -2186,6 +2213,7 @@ fn make_text_visibility_menu(
 
     let menu_item_enable_text_time_segment_hour12 = CheckMenuItem::with_label( "Enable Time Segment Hour 12" );
 
+    menu_item_enable_text_time_segment_hour12.set_sensitive( with_segment );
     menu_item_enable_text_time_segment_hour12.set_active( app_info.borrow().enable_text_time_segment_hour12 );
 
     {
@@ -2295,6 +2323,13 @@ fn make_popup_menu(
     logo: Option<Pixbuf>,
 ) -> Menu
 {
+    let with_second =
+        if let Some( x ) = image_info.borrow().config.with_second && x { true } else { false }
+        ;
+    let with_sub_second =
+        if let Some( x ) = image_info.borrow().config.with_sub_second && x { true } else { false }
+        ;
+
     let menu = Menu::new();
 
     let menu_item_pref = MenuItem::with_label( "Preferences" );
@@ -2337,6 +2372,7 @@ fn make_popup_menu(
 
     let menu_item_pref_show_seconds = CheckMenuItem::with_label( "Show Seconds" );
 
+    menu_item_pref_show_seconds.set_sensitive( with_second );
     menu_item_pref_show_seconds.set_active( app_info.borrow().show_seconds );
 
     {
@@ -2354,6 +2390,7 @@ fn make_popup_menu(
 
     let menu_item_pref_enable_sub_second_hand = CheckMenuItem::with_label( "Enable sub second hand" );
 
+    menu_item_pref_enable_sub_second_hand.set_sensitive( with_sub_second );
     menu_item_pref_enable_sub_second_hand.set_active( app_info.borrow().enable_sub_second_hand );
 
     {
@@ -2388,7 +2425,7 @@ fn make_popup_menu(
 
     let menu_item_pref_text_visibility = MenuItem::with_label( "Text visibility" );
 
-    let menu_pref_text_visibility = make_text_visibility_menu( &da.clone(), &app_info.clone() );
+    let menu_pref_text_visibility = make_text_visibility_menu( &da.clone(), &app_info.clone(), &image_info.clone() );
     menu_item_pref_text_visibility.set_submenu( Some( &menu_pref_text_visibility ) );
 
     let menu_item_pref_time_zone = MenuItem::with_label( "Time Zone" );
@@ -2475,7 +2512,7 @@ fn make_popup_menu(
 
             menu_item_snapshot.connect_activate(
                 move |_| {
-                    make_png_image( &image_info.borrow(), &app_info.borrow() );
+                    make_png_image( &image_info.borrow(), &mut app_info.borrow_mut() );
                 }
             );
         }
@@ -2530,16 +2567,10 @@ fn main() {
                             {
                                 app_info.replace( app_info_load );
                             }
-                        ,   Err( err ) =>
-                            {
-                                error!( "{}", err );
-                            }
+                        ,   Err( err ) => { error!( "{}", err ); }
                         }
                     }
-                ,   Err( err ) =>
-                    {
-                        error!( "{}", err );
-                    }
+                    ,   Err( err ) => { error!( "{}", err ); }
                 }
             }
         ,   Err( err ) =>
@@ -2547,10 +2578,7 @@ fn main() {
                 match err.kind()
                 {
                     std::io::ErrorKind::NotFound => { /* pass */ }
-                ,   _ =>
-                    {
-                        error!( "{}", err );
-                    }
+                ,   _ => { error!( "{}", err ); }
                 }
             }
         }
@@ -2590,9 +2618,9 @@ fn main() {
 
                 da.connect_draw( move | da, cr |
                     {
-                        update_region( &window, &image_info.borrow(), &mut app_info.borrow_mut() );
                         update_watch( &da, &mut app_info.borrow_mut() );
-                        draw_watch( cr, &image_info.borrow(), &app_info.borrow() );
+                        update_region( &window, &image_info.borrow(), &mut app_info.borrow_mut() );
+                        draw_watch(  cr, &image_info.borrow(), &app_info.borrow(), false );
                         gtk::glib::Propagation::Proceed
                     }
                 );

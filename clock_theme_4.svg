@@ -25,15 +25,15 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      showgrid="false"
-     inkscape:zoom="1.4183568"
-     inkscape:cx="-47.590283"
-     inkscape:cy="126.20238"
+     inkscape:zoom="2.8367135"
+     inkscape:cx="109.10513"
+     inkscape:cy="81.784783"
      inkscape:window-width="1965"
      inkscape:window-height="1211"
-     inkscape:window-x="312"
-     inkscape:window-y="118"
+     inkscape:window-x="398"
+     inkscape:window-y="120"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg5" />
+     inkscape:current-layer="layer8" />
   <defs
      id="defs2">
     <linearGradient
@@ -72,12 +72,10 @@
      inkscape:groupmode="layer"
      id="layer1"
      style="fill:#666666">
-    <circle
-       style="display:inline;fill:none;fill-opacity:1;stroke:#ffff00;stroke-width:0.999996;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+    <path
        id="path4554"
-       cx="128.37891"
-       cy="128.37891"
-       r="106.82462" />
+       style="display:inline;fill:#333333;fill-opacity:1;stroke:none;stroke-width:0.999996;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       d="M 128.35352 20.353516 A 108.0245 108.0245 0 0 0 20.330078 128.37891 A 108.0245 108.0245 0 0 0 128.35352 236.4043 A 108.0245 108.0245 0 0 0 236.37891 128.37891 A 108.0245 108.0245 0 0 0 128.35352 20.353516 z M 128.35352 48.050781 A 80.327667 80.327667 0 0 1 208.68164 128.37891 A 80.327667 80.327667 0 0 1 128.35352 208.70703 A 80.327667 80.327667 0 0 1 48.027344 128.37891 A 80.327667 80.327667 0 0 1 128.35352 48.050781 z " />
     <path
        id="path234"
        style="fill:url(#linearGradient1090);fill-opacity:1;stroke:none;stroke-width:0.755906;stroke-linecap:round"
@@ -256,12 +254,12 @@
      id="layer5"
      inkscape:label="second_handle">
     <rect
-       style="fill:#474e9c;fill-opacity:1;stroke:#ffff00;stroke-width:0.999996;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#474e9c;fill-opacity:1;stroke:#ffff00;stroke-width:1.2;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
        id="rect4129-0"
        width="2.1131291"
        height="25.507141"
        x="127.32234"
-       y="17.785997"
+       y="19.285997"
        rx="1.0565646"
        ry="1.0191771" />
   </g>
@@ -269,43 +267,47 @@
      inkscape:groupmode="layer"
      id="layer6"
      inkscape:label="center_circle"
-     style="display:inline"
-     sodipodi:insensitive="true">
+     style="display:inline">
     <circle
-       style="fill:#ffff00;fill-opacity:1;stroke:#474e9c;stroke-width:1;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#ffff00;fill-opacity:1;stroke:#474e9c;stroke-width:0.999999;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
        id="path4075"
-       cx="128.37891"
+       cx="128.35449"
        cy="128.37891"
-       r="2.25" />
+       r="5.5" />
   </g>
-  <text
-     xml:space="preserve"
-     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.6667px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.999997;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
-     x="0.28763115"
-     y="247.98819"
-     id="config"
-     inkscape:label="config"
-     transform="scale(0.93565221,1.0687732)"><tspan
-       sodipodi:role="line"
-       id="tspan5067">#toml</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5069">theme_name = &quot;Simple&quot;</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5071">theme_description = &quot;very simple&quot;</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5073">with_sub_second = true</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5075">with_second = false</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5077">with_text_time_zone = false</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5079">with_text_date = false</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5081">with_text_time = false</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5083">with_text_segment = false</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5085">enable_rotate_center_circle = false</tspan><tspan
-       sodipodi:role="line"
-       id="tspan5087">enable_update_region_every_time = true</tspan></text>
+  <g
+     inkscape:groupmode="layer"
+     id="layer8"
+     inkscape:label="config">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.6667px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.999997;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       x="0.28763115"
+       y="247.98819"
+       id="aaaa"
+       inkscape:label="aaaa"
+       transform="scale(0.93565221,1.0687732)"><tspan
+         sodipodi:role="line"
+         id="tspan11535">#toml</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11537">theme_name = &quot;Simple&quot;</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11539">theme_description = &quot;very simple&quot;</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11541">with_second = true</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11543">with_sub_second = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11545">with_text_time_zone = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11547">with_text_date = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11549">with_text_time = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11551">with_text_segment = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11553"># enable_rotate_center_circle = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan11555">enable_update_region_every_time = true</tspan></text>
+  </g>
 </svg>

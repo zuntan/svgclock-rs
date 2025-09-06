@@ -2,13 +2,13 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="249.99997"
-   height="249.99998"
-   viewBox="0 0 66.145824 66.145829"
+   width="250"
+   height="250"
+   viewBox="0 0 66.145832 66.145833"
    version="1.1"
    id="svg5"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
-   sodipodi:docname="clock_theme_1_base.svg"
+   sodipodi:docname="clock_theme_1.svg"
    inkscape:export-filename="clock_theme_1.svg"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
@@ -29,14 +29,14 @@
      inkscape:document-units="px"
      showgrid="false"
      inkscape:zoom="2.8804305"
-     inkscape:cx="131.23038"
-     inkscape:cy="274.43814"
-     inkscape:window-width="1730"
+     inkscape:cx="26.21136"
+     inkscape:cy="275.13248"
+     inkscape:window-width="1965"
      inkscape:window-height="1248"
-     inkscape:window-x="427"
-     inkscape:window-y="87"
+     inkscape:window-x="577"
+     inkscape:window-y="90"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer7-8" />
+     inkscape:current-layer="layer10" />
   <defs
      id="defs2">
     <linearGradient
@@ -429,7 +429,7 @@
      id="layer7-8"
      inkscape:label="sub_second_base"
      style="display:inline;stroke-width:1.05573"
-     transform="matrix(0.94720644,0,0,0.94720644,-12.460346,-7.972004)">
+     transform="matrix(0.94720644,0,0,0.94720644,-12.460346,-7.9720041)">
     <g
        id="g9440"
        transform="translate(0.16789707,-1.7001021)">
@@ -523,20 +523,10 @@
      id="layer8"
      inkscape:label="sub_second_handle"
      transform="translate(-14.993305,-10.977898)">
-    <g
-       id="g10332"
-       transform="translate(-1.8390759,0.00445731)">
-      <path
-         id="rect10263"
-         style="display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.132292;stroke-linecap:round;stroke-dasharray:none"
-         d="m 49.971626,46.55478 -0.275435,8.678024 v 0.948262 a 0.91208243,0.91208243 0 0 0 -0.636137,0.869198 0.91208243,0.91208243 0 0 0 0.513664,0.820105 0.68408018,0.68408018 0 0 1 -0.285771,-0.555522 0.68408018,0.68408018 0 0 1 0.684196,-0.684196 0.68408018,0.68408018 0 0 1 0.683679,0.684196 0.68408018,0.68408018 0 0 1 -0.285771,0.555522 0.91208243,0.91208243 0 0 0 0.514181,-0.820105 0.91208243,0.91208243 0 0 0 -0.637171,-0.869715 v -0.947745 z" />
-      <circle
-         style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.132292;stroke-linecap:round;stroke-dasharray:none"
-         id="path10328"
-         cx="49.9767"
-         cy="55.32198"
-         r="0.44554406" />
-    </g>
+    <path
+       id="rect4351-4"
+       style="display:inline;fill:#000000;fill-opacity:0.999903;stroke:none;stroke-width:0.2;stroke-linecap:round"
+       d="m 48.143758,46.386485 -0.126712,8.683139 a 0.28167901,0.28167901 0 0 0 -0.154988,0.251331 0.28167901,0.28167901 0 0 0 0.147657,0.247493 l -0.0045,0.310149 v 0.482242 a 0.72772484,0.74273287 0 0 0 -0.588707,0.728511 0.72772484,0.74273287 0 0 0 0.378916,0.651542 0.61731383,0.61731383 0 0 1 -0.268436,-0.508596 0.61731383,0.61731383 0 0 1 0.617158,-0.617334 0.61731383,0.61731383 0 0 1 0.617332,0.617334 0.61731383,0.61731383 0 0 1 -0.27053,0.510165 0.72772484,0.74273287 0 0 0 0.38101,-0.653111 0.72772484,0.74273287 0 0 0 -0.588707,-0.729036 v -0.481717 h -3.38e-4 l -0.0045,-0.310498 a 0.28167901,0.28167901 0 0 0 0.147133,-0.247144 0.28167901,0.28167901 0 0 0 -0.154464,-0.251331 z" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -599,8 +589,42 @@
        r="0.14999999" />
     <path
        id="path5174"
-       style="fill:#ffffff;fill-opacity:0.146827;stroke-width:0.200025;stroke-linecap:round;stroke-dasharray:none"
+       style="fill:#ffffff;fill-opacity:0.253852;stroke-width:0.2;stroke-linecap:round"
        d="m 74.143054,42.501469 c 0,14.428099 -11.643141,0.587619 -26.07124,0.587619 -14.428099,0 -26.177528,13.84048 -26.177528,-0.587619 0,-14.428099 11.72716,-24.670966 26.155259,-24.670966 14.428099,0 26.093509,10.242867 26.093509,24.670966 z"
        sodipodi:nodetypes="sssss" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer10"
+     inkscape:label="config"
+     transform="translate(-14.993305,-10.977898)">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82223px;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;stroke-width:0.3175;stroke-linecap:round"
+       x="14.96226"
+       y="79.268623"
+       id="text12028"><tspan
+         sodipodi:role="line"
+         id="tspan1168">#toml</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1170">theme_name = &quot;Simple&quot;</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1172">theme_description = &quot;very simple&quot;</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1174">with_second = true</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1176">with_sub_second = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1178">with_text_time_zone = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1180">with_text_date = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1182">with_text_time = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1184">with_text_segment = false</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1186"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan1188"></tspan></text>
   </g>
 </svg>

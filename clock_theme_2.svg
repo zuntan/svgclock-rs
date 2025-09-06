@@ -2,13 +2,13 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="302.09296"
-   height="302.09299"
-   viewBox="0 0 79.928752 79.928761"
+   width="302"
+   height="302"
+   viewBox="0 0 79.904157 79.904158"
    version="1.1"
    id="svg492"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
-   sodipodi:docname="clock_theme_2_base.svg"
+   sodipodi:docname="clock_theme_2.svg"
    inkscape:export-filename="clock_theme_2.svg"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
@@ -28,14 +28,14 @@
      inkscape:document-units="px"
      showgrid="false"
      inkscape:zoom="1.829812"
-     inkscape:cx="63.667743"
-     inkscape:cy="604.98018"
-     inkscape:window-width="1571"
-     inkscape:window-height="1200"
-     inkscape:window-x="513"
-     inkscape:window-y="162"
+     inkscape:cx="138.53882"
+     inkscape:cy="168.59656"
+     inkscape:window-width="1965"
+     inkscape:window-height="1248"
+     inkscape:window-x="398"
+     inkscape:window-y="155"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer2" />
   <defs
      id="defs489" />
   <g
@@ -368,5 +368,34 @@
        cx="37.434303"
        cy="148.43903"
        r="0.34852925" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="config">
+    <text
+       xml:space="preserve"
+       style="font-size:5.64443px;font-family:'Playfair Display';-inkscape-font-specification:'Playfair Display, Normal';text-align:start;text-anchor:start;fill:#000000;fill-opacity:0.999903;stroke:#000000;stroke-width:0.2;stroke-linecap:round;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       x="-1.8583149"
+       y="84.240173"
+       id="text842"><tspan
+         sodipodi:role="line"
+         id="tspan896">#toml</tspan><tspan
+         sodipodi:role="line"
+         id="tspan898">theme_name = &quot;&quot;</tspan><tspan
+         sodipodi:role="line"
+         id="tspan900">theme_description = &quot;&quot;</tspan><tspan
+         sodipodi:role="line"
+         id="tspan902">with_second = true</tspan><tspan
+         sodipodi:role="line"
+         id="tspan904">with_sub_second = true</tspan><tspan
+         sodipodi:role="line"
+         id="tspan906">with_text_time_zone = true</tspan><tspan
+         sodipodi:role="line"
+         id="tspan908">with_text_date = true</tspan><tspan
+         sodipodi:role="line"
+         id="tspan910">with_text_time = true</tspan><tspan
+         sodipodi:role="line"
+         id="tspan912">with_text_segment = false</tspan></text>
   </g>
 </svg>
