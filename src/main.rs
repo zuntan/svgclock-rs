@@ -128,8 +128,7 @@ fn parse_svg_transform_value(transform: &str) -> Option<DAffine2> {
     }
 }
 
-type FilterOutput = Vec<u8>;
-type FilterInputReader<'a> = quick_xml::Reader<&'a [u8]>;
+type XmlInputReader<'a> = quick_xml::Reader<&'a [u8]>;
 
 fn parse_xml_sz_and_vbox(
     src_buf: &[u8],
@@ -144,7 +143,7 @@ fn parse_xml_sz_and_vbox(
     let mut viewbox_xy = DVec2::ZERO;
     let mut viewbox_sz = DVec2::ZERO;
 
-    let mut r_src = FilterInputReader::from_reader(&src_buf);
+    let mut r_src = XmlInputReader::from_reader(&src_buf);
 
     loop {
         let event = r_src.read_event();
@@ -207,7 +206,7 @@ fn parse_xml_config(
     src_buf: &[u8],
 ) -> Result<ImageInfoConfig, Box< dyn Error > > {
 
-    fn func_get_text( r_src: &mut FilterInputReader ) -> Result< String, Box< dyn Error > >
+    fn func_get_text( r_src: &mut XmlInputReader ) -> Result< String, Box< dyn Error > >
     {
         let target_tag_tspan = "tspan".as_bytes();
 
@@ -221,6 +220,7 @@ fn parse_xml_config(
                 Ok(quick_xml::events::Event::End( tag )) => {
                     if tag.name().as_ref() == target_tag_tspan
                     {
+                        text += "\n";
                         break;
                     }
                 }
@@ -235,15 +235,42 @@ fn parse_xml_config(
                     }
                 },
                 Ok(quick_xml::events::Event::Text( inner)) => {
+                    debug!("{:?}", std::str::from_utf8( inner.as_ref()) );
+
                     text += std::str::from_utf8( inner.as_ref() ).unwrap();
                 },
                 Ok(quick_xml::events::Event::CData( inner)) => {
                     text += std::str::from_utf8( inner.as_ref() ).unwrap();
                 },
+                Ok(quick_xml::events::Event::GeneralRef( inner)) => {
+
+                    if let Ok( x ) = inner.resolve_char_ref() && let Some( x ) = x
+                    {
+                        debug!("resolve_char_ref {:?}", x );
+                        text += x;
+                    }
+                    /*
+                    else if let Ok( x ) = inner.xml_content()
+                    {
+                        debug!("xml_content {:?}", x );
+                        //text += x;
+                    }
+                    */
+                    else
+                    {
+                        text += std::str::from_utf8( inner.as_ref() ).unwrap();
+                    }
+                },
+                Ok( x ) =>
+                {
+                    debug!("{:?}", x );
+                }
                 Err( x ) => { return Err( Box::new( x ) ); }
                 _ => {}
             }
         }
+
+        debug!( "text : {:?}",  text );
 
         Ok( text )
     }
@@ -254,7 +281,7 @@ fn parse_xml_config(
 
     let mut text = String::new();
 
-    let mut r_src = FilterInputReader::from_reader(&src_buf);
+    let mut r_src = XmlInputReader::from_reader(&src_buf);
 
     loop {
         let event = r_src.read_event();
@@ -281,13 +308,13 @@ fn parse_xml_config(
         }
     }
 
+    debug!( "config text : {:?}",  text );
+
     let ret: ImageInfoConfig =
         match toml::from_str( &text )
         {
             Ok( x ) =>
             {
-                let mut x: ImageInfoConfig = x;
-                x.update_default();
                 x
             }
         ,   Err( x ) =>
@@ -302,7 +329,7 @@ fn parse_xml_config(
 }
 
 #[derive(Debug, strum::EnumString, strum::Display)]
-enum FilterTarget {
+enum LayerTarget {
     #[strum(to_string = "base")]
     Base,
     #[strum(to_string = "base_text")]
@@ -325,7 +352,7 @@ enum FilterTarget {
 
 fn parse_xml_center(
     src_buf: &[u8],
-    target: FilterTarget
+    target: LayerTarget
 )
 -> Result< DVec2, Box< dyn Error > > {
 
@@ -362,7 +389,7 @@ fn parse_xml_center(
         DAffine2::IDENTITY
     };
 
-    let mut r_src = FilterInputReader::from_reader(&src_buf);
+    let mut r_src = XmlInputReader::from_reader(&src_buf);
 
     loop {
         let event = r_src.read_event();
@@ -462,8 +489,8 @@ fn parse_xml_center(
 
 fn filter_xml(
     src_buf: &[u8],
-    target: FilterTarget,
-) -> Result< FilterOutput, Box< dyn Error > >
+    target: LayerTarget,
+) -> Result< Vec<u8>, Box< dyn Error > >
 {
     let target_tag = "g".as_bytes();
     let target_attr_key_groupmode = "inkscape:groupmode".as_bytes();
@@ -475,7 +502,7 @@ fn filter_xml(
     let mut depth = 0;
     let mut depth_dis_output = -1;
 
-    let mut r_src = FilterInputReader::from_reader(&src_buf);
+    let mut r_src = XmlInputReader::from_reader(&src_buf);
 
     loop {
         let event = r_src.read_event();
@@ -722,17 +749,17 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
     }
 }
 
-fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
+fn load_xml( src_buf: &Vec<u8> ) -> ImageInfo
 {
-    let src_base = filter_xml( &src_buf,FilterTarget::Base );
-    let src_base_text = filter_xml( &src_buf,FilterTarget::BaseText );
-    let src_long_handle = filter_xml( &src_buf,FilterTarget::LongHandle );
-    let src_short_handle = filter_xml( &src_buf, FilterTarget::ShortHandle );
-    let src_second_handle = filter_xml( &src_buf, FilterTarget::SecondHandle );
-    let src_center_circle = filter_xml( &src_buf,FilterTarget::CenterCircle );
-    let src_sub_second_base = filter_xml( &src_buf,FilterTarget::SubSecondBase );
-    let src_sub_second_handle = filter_xml( &src_buf,FilterTarget::SubSecondHandle );
-    let src_sub_second_center_circle = filter_xml( &src_buf,FilterTarget::SubSecondCenterCircle );
+    let src_base = filter_xml( src_buf,LayerTarget::Base );
+    let src_base_text = filter_xml( src_buf,LayerTarget::BaseText );
+    let src_long_handle = filter_xml( src_buf,LayerTarget::LongHandle );
+    let src_short_handle = filter_xml( src_buf, LayerTarget::ShortHandle );
+    let src_second_handle = filter_xml( src_buf, LayerTarget::SecondHandle );
+    let src_center_circle = filter_xml( src_buf,LayerTarget::CenterCircle );
+    let src_sub_second_base = filter_xml( src_buf,LayerTarget::SubSecondBase );
+    let src_sub_second_handle = filter_xml( src_buf,LayerTarget::SubSecondHandle );
+    let src_sub_second_center_circle = filter_xml( src_buf,LayerTarget::SubSecondCenterCircle );
 
     let fn_make_svg_handle = | src_xml : &Vec<u8> |
     {
@@ -751,8 +778,17 @@ fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
 
     let mut ret = ImageInfo::new();
 
+    if let Ok( config ) = parse_xml_config( src_buf )
+    {
+        debug!( "config {:?}", config );
+
+        let mut config = config;
+        config.update_default();
+        ret.config = config;
+    }
+
     if let Ok(src_xml) = src_base {
-        if let Ok(result) = parse_xml_sz_and_vbox(&src_xml) {
+        if let Ok(result) = parse_xml_sz_and_vbox(&src_xml ) {
             ret.sz = result.0;
             ret.viewbox_xy = result.1;
             ret.viewbox_sz = result.2;
@@ -783,7 +819,7 @@ fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
 
     if let Ok(src_xml) = src_center_circle {
 
-        if let Ok(center) = parse_xml_center(&src_xml,FilterTarget::CenterCircle ) {
+        if let Ok(center) = parse_xml_center(&src_xml,LayerTarget::CenterCircle ) {
             ret.center = center;
         }
 
@@ -805,7 +841,7 @@ fn load_xml( src_buf: & Vec<u8> ) -> ImageInfo
 
     if let Ok(src_xml) = src_sub_second_center_circle {
 
-        if let Ok(center) = parse_xml_center(&src_xml,FilterTarget::SubSecondCenterCircle ) {
+        if let Ok(center) = parse_xml_center(&src_xml,LayerTarget::SubSecondCenterCircle ) {
             ret.center_sub_second = center;
         }
 
