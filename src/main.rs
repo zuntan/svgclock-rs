@@ -44,6 +44,25 @@ use chrono::{ DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike, Ut
 
 use linked_hash_map::LinkedHashMap;
 
+const ENABLE_FILE_INCLUDE: bool = true;
+
+const INCLUDE_BYTES_LOGO_PNG: &'static [u8] = include_bytes!( "../logo.png" );
+const INCLUDE_BYTES_CLOCL_THEME_1_SVG: &'static [u8] = include_bytes!( "../clock_theme_1.svg");
+const INCLUDE_BYTES_CLOCL_THEME_2_SVG: &'static [u8] = include_bytes!( "../clock_theme_2.svg");
+const INCLUDE_BYTES_CLOCL_THEME_3_SVG: &'static [u8] = include_bytes!( "../clock_theme_3.svg");
+const INCLUDE_BYTES_CLOCL_THEME_4_SVG: &'static [u8] = include_bytes!( "../clock_theme_4.svg");
+// const INCLUDE_BYTES_CLOCL_THEME_5_SVG: &'static [u8] = include_bytes!( "../clock_theme_5.svg");
+// const INCLUDE_BYTES_CLOCL_THEME_6_SVG: &'static [u8] = include_bytes!( "../clock_theme_6.svg");
+
+const FILE_LOGO_PNG: &str = "logo.png";
+const FILE_CLOCL_THEME_1_SVG: &str = "clock_theme_1.svg";
+const FILE_CLOCL_THEME_2_SVG: &str = "clock_theme_2.svg";
+const FILE_CLOCL_THEME_3_SVG: &str = "clock_theme_3.svg";
+const FILE_CLOCL_THEME_4_SVG: &str = "clock_theme_4.svg";
+const FILE_CLOCL_THEME_5_SVG: &str = "clock_theme_5.svg";
+const FILE_CLOCL_THEME_6_SVG: &str = "clock_theme_6.svg";
+
+
 fn to_char( br: &BytesRef ) -> Option< char >
 {
     if let Ok( x ) = br.resolve_char_ref() && let Some( x ) = x
@@ -68,7 +87,7 @@ fn to_char( br: &BytesRef ) -> Option< char >
 
 fn parse_float_list(val: &str) -> Vec<f64> {
 
-    static RE_FLOAT: LazyLock<Regex> = LazyLock::new(
+    const RE_FLOAT: LazyLock<Regex> = LazyLock::new(
         ||
         {
             Regex::new(r"[-+]?([0-9]*\.[0-9]+|[0-9]+\.?[0-9]*)([eE][-+]?[0-9]+)?").unwrap()
@@ -87,7 +106,7 @@ fn parse_float_list(val: &str) -> Vec<f64> {
 
 fn parse_svg_transform_value(transform: &str) -> Option<DAffine2> {
 
-    static RE_TRANSLATE: LazyLock< Regex > = LazyLock::new(
+    const RE_TRANSLATE: LazyLock< Regex > = LazyLock::new(
         ||
         {
             Regex::new(r"(?i)(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^\)]+)\)").unwrap()
@@ -156,11 +175,12 @@ type XmlInputReader<'a> = quick_xml::Reader<&'a [u8]>;
 fn parse_xml_sz_and_vbox(
     src_buf: &[u8],
 ) -> Result<(IVec2, DVec2, DVec2), Box< dyn Error > > {
-    let target_tag = "svg".as_bytes();
 
-    let target_attr_key_width = "width".as_bytes();
-    let target_attr_key_height = "height".as_bytes();
-    let target_attr_key_viewbox = "viewBox".as_bytes();
+    const TARGET_TAG: &[u8] = "svg".as_bytes();
+
+    const TARGET_ATTR_KEY_WIDTH: &[u8] = "width".as_bytes();
+    const TARGET_ATTR_KEY_HEIGHT: &[u8] = "height".as_bytes();
+    const TARGET_ATTR_KEY_VIEWBOX: &[u8] = "viewBox".as_bytes();
 
     let mut sz = IVec2::ZERO;
     let mut viewbox_xy = DVec2::ZERO;
@@ -174,8 +194,8 @@ fn parse_xml_sz_and_vbox(
         match event {
             Ok(quick_xml::events::Event::Eof) => break,
             Ok(quick_xml::events::Event::Start(ref tag)) => {
-                if tag.name().as_ref() == target_tag {
-                    if let Ok(attr) = tag.try_get_attribute(target_attr_key_width)
+                if tag.name().as_ref() == TARGET_TAG {
+                    if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_WIDTH)
                         && let Some(attr) = attr
                     {
                         if let Ok(num) =
@@ -185,7 +205,7 @@ fn parse_xml_sz_and_vbox(
                         }
                     }
 
-                    if let Ok(attr) = tag.try_get_attribute(target_attr_key_height)
+                    if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_HEIGHT)
                         && let Some(attr) = attr
                     {
                         if let Ok(num) =
@@ -195,7 +215,7 @@ fn parse_xml_sz_and_vbox(
                         }
                     }
 
-                    if let Ok(attr) = tag.try_get_attribute(target_attr_key_viewbox)
+                    if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_VIEWBOX)
                         && let Some(attr) = attr
                     {
                         let arg: Vec<f64> =
@@ -231,7 +251,7 @@ fn parse_xml_config(
 
     fn func_get_text( r_src: &mut XmlInputReader ) -> Result< String, Box< dyn Error > >
     {
-        let target_tag_tspan = "tspan".as_bytes();
+        const TARGET_TAG_TSPAN: &[u8] = "tspan".as_bytes();
 
         let mut text = String::new();
 
@@ -241,14 +261,14 @@ fn parse_xml_config(
             match event {
                 Ok(quick_xml::events::Event::Eof) => break,
                 Ok(quick_xml::events::Event::End( tag )) => {
-                    if tag.name().as_ref() == target_tag_tspan
+                    if tag.name().as_ref() == TARGET_TAG_TSPAN
                     {
                         text += "\n";
                         break;
                     }
                 }
                 Ok(quick_xml::events::Event::Start(ref tag)) => {
-                    if tag.name().as_ref() == target_tag_tspan
+                    if tag.name().as_ref() == TARGET_TAG_TSPAN
                     {
                         match func_get_text( r_src )
                         {
@@ -353,17 +373,17 @@ fn parse_xml_center(
 )
 -> Result< DVec2, Box< dyn Error > > {
 
-    let target_attr_key_transform = "transform".as_bytes();
+    const TARGET_ATTR_KEY_TRANSFORM: &[u8] = "transform".as_bytes();
 
-    let target_tag = "g".as_bytes();
-    let target_attr_key_groupmode = "inkscape:groupmode".as_bytes();
-    let target_attr_val_groupmode = "layer".as_bytes();
-    let target_attr_key_label = "inkscape:label".as_bytes();
+    const TARGET_TAG: &[u8] = "g".as_bytes();
+    const TARGET_ATTR_KEY_GROUPMODE: &[u8] = "inkscape:groupmode".as_bytes();
+    const TARGET_ATTR_VAL_GROUPMODE: &[u8] = "layer".as_bytes();
+    const TARGET_ATTR_KEY_LABEL: &[u8] = "inkscape:label".as_bytes();
 
-    let target_tag_ellipse = "ellipse".as_bytes();
-    let target_tag_circle = "circle".as_bytes();
-    let target_attr_key_cx = "cx".as_bytes();
-    let target_attr_key_cy = "cy".as_bytes();
+    const TARGET_TAG_ELLIPSE: &[u8] = "ellipse".as_bytes();
+    const TARGET_TAG_CIRCLE: &[u8] = "circle".as_bytes();
+    const TARGET_ATTR_KEY_CX: &[u8] = "cx".as_bytes();
+    const TARGET_ATTR_KEY_CY: &[u8] = "cy".as_bytes();
 
     let mut ret = DVec2::ZERO;
 
@@ -372,7 +392,7 @@ fn parse_xml_center(
     let mut target_layer = false;
 
     let get_transform_affine = |tag: &BytesStart<'_>| {
-        if let Ok(attr) = tag.try_get_attribute(target_attr_key_transform)
+        if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_TRANSFORM)
             && let Some(attr) = attr
         {
             if let Ok(attr_transform) = std::str::from_utf8(attr.value.as_ref()) {
@@ -400,16 +420,16 @@ fn parse_xml_center(
                     // check <g>
 
                     if translate_affines.len() == 2
-                        && tag.name().as_ref() == target_tag
+                        && tag.name().as_ref() == TARGET_TAG
                     {
                         target_layer = false;
 
-                        if let Ok(attr) = tag.try_get_attribute(target_attr_key_groupmode)
+                        if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_GROUPMODE)
                             && let Some(attr) = attr
                         {
-                            if attr.value.as_ref() == target_attr_val_groupmode
+                            if attr.value.as_ref() == TARGET_ATTR_VAL_GROUPMODE
                             {
-                                if let Ok(attr) = tag.try_get_attribute(target_attr_key_label)
+                                if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_LABEL)
                                     && let Some(attr) = attr
                                 {
                                     if attr.value.as_ref() == target.to_string().as_bytes()
@@ -431,8 +451,8 @@ fn parse_xml_center(
                     if target_layer
                         && translate_affines.len() == 2
                         && (
-                                tag.name().as_ref() == target_tag_ellipse
-                            ||  tag.name().as_ref() == target_tag_circle
+                                tag.name().as_ref() == TARGET_TAG_ELLIPSE
+                            ||  tag.name().as_ref() == TARGET_TAG_CIRCLE
                         )
                     {
                         let mut tran_affine = DAffine2::IDENTITY;
@@ -448,7 +468,7 @@ fn parse_xml_center(
 
                         let mut vec2 = DVec2 { x: 0.0, y: 0.0 };
 
-                        if let Ok(attr) = tag.try_get_attribute(target_attr_key_cx)
+                        if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_CX)
                             && let Some(attr) = attr
                         {
                             if let Ok(num) =
@@ -458,7 +478,7 @@ fn parse_xml_center(
                             }
                         }
 
-                        if let Ok(attr) = tag.try_get_attribute(target_attr_key_cy)
+                        if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_CY)
                             && let Some(attr) = attr
                         {
                             if let Ok(num) =
@@ -489,10 +509,10 @@ fn filter_xml(
     target: LayerTarget,
 ) -> Result< Vec<u8>, Box< dyn Error > >
 {
-    let target_tag = "g".as_bytes();
-    let target_attr_key_groupmode = "inkscape:groupmode".as_bytes();
-    let target_attr_val_groupmode = "layer".as_bytes();
-    let target_attr_key_label = "inkscape:label".as_bytes();
+    const TARGET_TAG: &[u8] = "g".as_bytes();
+    const TARGET_ATTR_KEY_GROUPMODE: &[u8] = "inkscape:groupmode".as_bytes();
+    const TARGET_ATTR_VAL_GROUPMODE: &[u8] = "layer".as_bytes();
+    const TARGET_ATTR_KEY_LABEL: &[u8] = "inkscape:label".as_bytes();
 
     let mut writer = quick_xml::Writer::new(Cursor::new(Vec::<u8>::new()));
 
@@ -511,15 +531,15 @@ fn filter_xml(
                 quick_xml::events::Event::Start(ref tag) => {
                     depth += 1;
 
-                    if depth == 2 && tag.name().as_ref() == target_tag {
+                    if depth == 2 && tag.name().as_ref() == TARGET_TAG {
                         let mut output = false;
 
-                        if let Ok(attr) = tag.try_get_attribute(target_attr_key_groupmode)
+                        if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_GROUPMODE)
                             && let Some(attr) = attr
                         {
-                            if attr.value.as_ref() == target_attr_val_groupmode
+                            if attr.value.as_ref() == TARGET_ATTR_VAL_GROUPMODE
                             {
-                                if let Ok(attr) = tag.try_get_attribute(target_attr_key_label)
+                                if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_LABEL)
                                     && let Some(attr) = attr
                                 {
                                     if attr.value.as_ref() == target.to_string().as_bytes() {
@@ -564,14 +584,14 @@ struct ImageInfoConfig
 {
     theme_name: Option< String >,
     theme_description: Option< String >,
-    with_sub_second: Option< bool >, // = true
-    with_second: Option< bool >, // = false
-    with_text_time_zone: Option< bool >, // = false
-    with_text_date: Option< bool >, // = false
-    with_text_time: Option< bool >, // = false
-    with_text_segment: Option< bool >, // = false
-    enable_rotate_center_circle: Option< bool >, // = false
-    enable_update_region_every_time: Option< bool >, // = true
+    with_sub_second: Option< bool >,
+    with_second: Option< bool >,
+    with_text_time_zone: Option< bool >,
+    with_text_date: Option< bool >,
+    with_text_time: Option< bool >,
+    with_text_segment: Option< bool >,
+    enable_rotate_center_circle: Option< bool >,
+    enable_update_region_every_time: Option< bool >,
 }
 
 impl ImageInfoConfig
@@ -726,17 +746,64 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
             }
             _ =>
             {
-                let mut src_buf = Vec::<u8>::new();
-
-                if let Ok( mut src ) = File::open(theme.source() )
-                {
-                    if let Ok(_) = src.read_to_end( &mut src_buf )
+                let tmp_src_buf: Option< Vec<u8> > =
+                    if ENABLE_FILE_INCLUDE
                     {
-                        Some( src_buf )
+                        match theme
+                        {
+                            AppInfoTheme::Theme1 =>
+                            {
+                                Some( INCLUDE_BYTES_CLOCL_THEME_1_SVG.to_vec() )
+                            }
+                        ,   AppInfoTheme::Theme2 =>
+                            {
+                                Some( INCLUDE_BYTES_CLOCL_THEME_2_SVG.to_vec() )
+                            }
+                        ,   AppInfoTheme::Theme3 =>
+                            {
+                                Some( INCLUDE_BYTES_CLOCL_THEME_3_SVG.to_vec() )
+                            }
+                        ,   AppInfoTheme::Theme4 =>
+                            {
+                                Some( INCLUDE_BYTES_CLOCL_THEME_4_SVG.to_vec() )
+                            }
+                        ,   _ => { None }
+                        }
+                    }
+                    else { None }
+                    ;
+
+                if tmp_src_buf.is_some()
+                {
+                    tmp_src_buf
+                }
+                else
+                {
+                    /* load from file */
+                    let source =
+                        match theme
+                        {
+                            AppInfoTheme::Theme1 => FILE_CLOCL_THEME_1_SVG
+                        ,   AppInfoTheme::Theme2 => FILE_CLOCL_THEME_2_SVG
+                        ,   AppInfoTheme::Theme3 => FILE_CLOCL_THEME_3_SVG
+                        ,   AppInfoTheme::Theme4 => FILE_CLOCL_THEME_4_SVG
+                        ,   AppInfoTheme::Theme5 => FILE_CLOCL_THEME_5_SVG
+                        ,   AppInfoTheme::Theme6 => FILE_CLOCL_THEME_6_SVG
+                        ,   _ => ""
+                        };
+
+                    let mut src_buf = Vec::<u8>::new();
+
+                    if let Ok( mut src ) = File::open( source )
+                    {
+                        if let Ok(_) = src.read_to_end( &mut src_buf )
+                        {
+                            Some( src_buf )
+                        }
+                        else { None }
                     }
                     else { None }
                 }
-                else { None }
             }
         }
         ;
@@ -865,52 +932,59 @@ fn load_xml( src_buf: &Vec<u8> ) -> ImageInfo
 
 fn load_logo() -> Option< Pixbuf >
 {
-    // load logo
-    let mut src_buf = Vec::<u8>::new();
-
-    let file = "logo.png";
-
-    let mut src = File::open(file ).unwrap();
-    src.read_to_end(&mut src_buf).unwrap();
-
-    if file.ends_with( ".svg" )
+    if ENABLE_FILE_INCLUDE
     {
-        if let Ok(result) = parse_xml_sz_and_vbox(&src_buf)
+        let mut src_buf = &INCLUDE_BYTES_LOGO_PNG[..];
+        let surface = ImageSurface::create_from_png(  &mut src_buf ).unwrap();
+        return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
+    }
+    else
+    {
+        // load logo
+        let mut src_buf = Vec::<u8>::new();
+
+        let mut src = File::open(FILE_LOGO_PNG ).unwrap();
+        src.read_to_end(&mut src_buf).unwrap();
+
+        if FILE_LOGO_PNG.ends_with( ".svg" )
         {
-
-            let sz = result.0;
-            let surface = ImageSurface::create(Format::ARgb32, sz.x, sz.y ).unwrap();
-
+            if let Ok(result) = parse_xml_sz_and_vbox(&src_buf)
             {
-                let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &src_buf ));
 
-                let svg_handle =
-                    rsvg::Loader::new()
-                    .read_stream(
-                        &svg_stream,
-                        None::<&gtk::gio::File>,
-                        None::<&gtk::gio::Cancellable>,
-                    )
-                    .unwrap()
-                    ;
+                let sz = result.0;
+                let surface = ImageSurface::create(Format::ARgb32, sz.x, sz.y ).unwrap();
 
-                let cctx = Context::new( &surface ).unwrap();
-                let viewport = Rectangle::new(0.0, 0.0, sz.x as f64, sz.y as f64);
+                {
+                    let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &src_buf ));
 
-                let svg_renderer = rsvg::CairoRenderer::new( &svg_handle );
-                svg_renderer.render_document( &cctx, &viewport ).unwrap();
+                    let svg_handle =
+                        rsvg::Loader::new()
+                        .read_stream(
+                            &svg_stream,
+                            None::<&gtk::gio::File>,
+                            None::<&gtk::gio::Cancellable>,
+                        )
+                        .unwrap()
+                        ;
+
+                    let cctx = Context::new( &surface ).unwrap();
+                    let viewport = Rectangle::new(0.0, 0.0, sz.x as f64, sz.y as f64);
+
+                    let svg_renderer = rsvg::CairoRenderer::new( &svg_handle );
+                    svg_renderer.render_document( &cctx, &viewport ).unwrap();
+                }
+
+                return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
             }
+        }
+        else if FILE_LOGO_PNG.ends_with( ".png" )
+        {
+            let mut src_buf = &src_buf[..];  // with io.Read Trait
+
+            let surface = ImageSurface::create_from_png(  &mut src_buf ).unwrap();
 
             return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
         }
-    }
-    else if file.ends_with( ".png" )
-    {
-        let mut src_buf = &src_buf[..];  // with io.Read Trait
-
-        let surface = ImageSurface::create_from_png(  &mut src_buf ).unwrap();
-
-        return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
     }
 
     None
@@ -926,36 +1000,6 @@ enum AppInfoTheme
 ,   Theme5
 ,   Theme6
 ,   Custom
-}
-
-impl AppInfoTheme
-{
-    /*
-    fn name( &self ) -> String
-    {
-        match self
-        {
-            Self::Theme1 => format!( "[{}] {}", self.to_string(), "Classic, With sub second, without text." )
-        ,   Self::Theme2 => format!( "[{}] {}", self.to_string(), "Modern, Square, With everything." )
-        ,   Self::Theme3 => format!( "[{}] {}", self.to_string(), "Modern, With digital segment." )
-        ,   _ => format!( "[{}]", self.to_string() )
-        }
-    }
-    */
-
-    fn source( &self ) -> &str
-    {
-        match self
-        {
-            Self::Theme1 => "clock_theme_1.svg"
-        ,   Self::Theme2 => "clock_theme_2.svg"
-        ,   Self::Theme3 => "clock_theme_3.svg"
-        ,   Self::Theme4 => "clock_theme_4.svg"
-        ,   Self::Theme5 => "clock_theme_5.svg"
-        ,   Self::Theme6 => "clock_theme_6.svg"
-        ,   _ => ""
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
