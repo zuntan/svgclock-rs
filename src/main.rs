@@ -79,8 +79,8 @@ const ABOUT_COMMENTS: &str = "svgclock-rs is a clock, using svg image.";
 const ABOUT_COPYRIGHT: &str = "Copyright © 2025 zuntan <>";
 const ABOUT_VERSION: &str = "Ver 0.1.0";
 const ABOUT_WEBSITE: &str = "https://github.com/zuntan/";
-const ABOUT_AUTHORS: [&'static str; 1] = [ "zuntan" ];
-const ABOUT_ARTISTS: [&'static str; 1] = [ "zuntan" ];
+const ABOUT_AUTHORS: [&'static str; 1] = [ "zuntan <>" ];
+const ABOUT_ARTISTS: [&'static str; 1] = [ "zuntan <>" ];
 
 fn get_app_info_file() -> std::path::PathBuf
 {
