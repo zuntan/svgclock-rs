@@ -1041,11 +1041,11 @@ enum AppInfoTheme
 #[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
 enum AppInfoFormatDate
 {
-    Fmt1
-,   Fmt2
-,   Fmt3
-,   Fmt4
-,   Custom
+    DtFmt1
+,   DtFmt2
+,   DtFmt3
+,   DtFmt4
+,   DtCustom
 }
 
 impl AppInfoFormatDate
@@ -1056,22 +1056,22 @@ impl AppInfoFormatDate
 
         match self
         {
-            Self::Fmt1 =>
+            Self::DtFmt1 =>
                 (
                     "%F" /* Year-month-day format (ISO 8601). Same as %Y-%m-%d. */
                 ,   "Year-month-day (e.g., 2025-10-31)"
                 )
-        ,   Self::Fmt2 =>
+        ,   Self::DtFmt2 =>
                 (
                     "%Y/%m/%d" /* Year/month/day format. Same as %Y/%m/%d. */
                 ,   "Year/month/day (e.g., 2025/10/31)"
                 )
-        ,   Self::Fmt3 =>
+        ,   Self::DtFmt3 =>
                 (
                     "%D" /* Month/day/year format. Same as %m/%d/%y. */
                 ,   "Month/day/year (e.g., 10/31/25)"
                 )
-        ,   Self::Fmt4 =>
+        ,   Self::DtFmt4 =>
                 (
                     "%v" /* Day-month-year format. Same as %e-%b-%Y. */
                 ,   "Day-month-year (e.g., 31-Oct-2025)"
@@ -1084,12 +1084,12 @@ impl AppInfoFormatDate
 #[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
 enum AppInfoFormatTime
 {
-    Fmt1
-,   Fmt2
-,   Fmt3
-,   Fmt4
-,   Fmt5
-,   Custom
+    TmFmt1
+,   TmFmt2
+,   TmFmt3
+,   TmFmt4
+,   TmFmt5
+,   TmCustom
 }
 
 impl AppInfoFormatTime
@@ -1100,27 +1100,27 @@ impl AppInfoFormatTime
 
         match self
         {
-            Self::Fmt1 =>
+            Self::TmFmt1 =>
                 (
                     "%r" /* Locale’s 12 hour clock time. (e.g., 11:11:04 PM). Falls back to %X if the locale does not have a 12 hour clock format. */
                 ,   "12 hour clock time with AM/PM (e.g., 11:11:04 PM)"
                 )
-        ,   Self::Fmt2 =>
+        ,   Self::TmFmt2 =>
                 (
                     "%I:%M:%S" /* Locale’s 12 hour clock time. (e.g., 11:11:04). Falls back to %X if the locale does not have a 12 hour clock format. */
                 ,   "12 hour clock time without AM/PM (e.g., 11:11:04)"
                 )
-        ,   Self::Fmt3 =>
+        ,   Self::TmFmt3 =>
                 (
                     "%T" /* Hour-minute-second format. Same as %H:%M:%S. */
                 ,   "Hour-minute-second (e.g., 23:11:04) "
                 )
-        ,   Self::Fmt4 =>
+        ,   Self::TmFmt4 =>
                 (
                     "%R" /* Hour-minute format. Same as %H:%M. */
                 ,   "Hour-minute (e.g., 23:11)"
                 )
-        ,   Self::Fmt5 =>
+        ,   Self::TmFmt5 =>
                 (
                     "%p"
                 ,   "AM/PM (e.g., AM)"
@@ -1184,9 +1184,9 @@ impl AppInfo
         ,   enable_text_time_segment: true
         ,   enable_text_time_segment_hour12: false
         ,   enable_text_time_segment_dotblink: true
-        ,   text_format_date: AppInfoFormatDate::Fmt1
+        ,   text_format_date: AppInfoFormatDate::DtFmt1
         ,   text_format_date_custom: None
-        ,   text_format_time: AppInfoFormatTime::Fmt1
+        ,   text_format_time: AppInfoFormatTime::TmFmt1
         ,   text_format_time_custom: None
         ,   time_zone: String::new()
         ,   theme: AppInfoTheme::Theme1
@@ -1610,7 +1610,7 @@ fn draw_watch(
                 {
                     if with_text_date && app_info.enable_text_date
                     {
-                        if app_info.text_format_date == AppInfoFormatDate::Custom && app_info.text_format_date_custom.is_some()
+                        if app_info.text_format_date == AppInfoFormatDate::DtCustom && app_info.text_format_date_custom.is_some()
                         {
                             let df = app_info.time_disp.format( app_info.text_format_date_custom.as_ref().unwrap() );
 
@@ -1631,7 +1631,7 @@ fn draw_watch(
                 {
                     if with_text_time && app_info.enable_text_time
                     {
-                        if app_info.text_format_time == AppInfoFormatTime::Custom && app_info.text_format_time_custom.is_some()
+                        if app_info.text_format_time == AppInfoFormatTime::TmCustom && app_info.text_format_time_custom.is_some()
                         {
                             let df = app_info.time_disp.format( app_info.text_format_time_custom.as_ref().unwrap() );
 
