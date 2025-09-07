@@ -6,6 +6,7 @@ extern crate log;
 
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::{io::Cursor, str};
 use std::convert::AsRef;
@@ -62,6 +63,43 @@ const FILE_CLOCL_THEME_4_SVG: &str = "clock_theme_4.svg";
 const FILE_CLOCL_THEME_5_SVG: &str = "clock_theme_5.svg";
 const FILE_CLOCL_THEME_6_SVG: &str = "clock_theme_6.svg";
 
+const UPDATE_CYCLE_SLOW: u64 = 100;
+const UPDATE_CYCLE_FAST: u64 = 25;
+
+const FILE_APP_INFO: &str = ".hello_gtk";
+const FILE_SNAPSHOTO_PNG: &str = "snapshot.png";
+
+const GTK_APPLICATION_ID: &str = "net.zuntan.svgclock-rs";
+const GTK_APPLICATION_TITLE: &str = "svgclock-rs";
+const GTK_APPLICATION_TOOLTIP: &str = "svgclock-rs";
+
+const ABOUT_TITLE: &str = GTK_APPLICATION_TITLE;
+const ABOUT_PROGRAM_NAME: &str = "svgclock";
+const ABOUT_COMMENTS: &str = "svgclock-rs is a clock, using svg image.";
+const ABOUT_COPYRIGHT: &str = "Copyright © 2025 zuntan <>";
+const ABOUT_VERSION: &str = "Ver 0.1.0";
+const ABOUT_WEBSITE: &str = "https://github.com/zuntan/";
+const ABOUT_AUTHORS: [&'static str; 1] = [ "zuntan" ];
+const ABOUT_ARTISTS: [&'static str; 1] = [ "zuntan" ];
+
+
+
+fn get_app_info_file() -> std::path::PathBuf
+{
+    let mut ret = PathBuf::new();
+
+    if cfg!( not( debug_assertions )  )
+    {
+        // for release only
+        ret.push( glib::home_dir() );
+    }
+
+    ret.push( FILE_APP_INFO );
+
+    debug!("get_app_info_file:{:?}", ret );
+
+    ret
+}
 
 fn to_char( br: &BytesRef ) -> Option< char >
 {
@@ -1094,11 +1132,6 @@ impl AppInfoFormatTime
     }
 }
 
-/*
-const FORMAT_TIME_HMS: &str = "%H:%M:%S";
-const FORMAT_TIME_AMPM: &str = "%p";
-*/
-
 #[derive(Debug, Serialize, Deserialize)]
 struct AppInfo
 {
@@ -1617,22 +1650,6 @@ fn draw_watch(
                         }
                     }
                 }
-                /*
-                b"time_hms" =>
-                {
-                    if app_info.enable_text_time
-                    {
-                        buf.extend_from_slice( app_info.time_disp.format( FORMAT_TIME_HMS ).to_string().as_bytes() );
-                    }
-                }
-                b"time_ampm" =>
-                {
-                    if app_info.enable_text_time_ampm
-                    {
-                        buf.extend_from_slice( app_info.time_disp.format( FORMAT_TIME_AMPM ).to_string().as_bytes() );
-                    }
-                }
-                */
                 _ =>
                 {
                     if with_text_segment && app_info.enable_text_time_segment
@@ -1939,8 +1956,20 @@ fn make_png_image(
         surface.mark_dirty();
     }
 
-    let mut screenshot_file = File::create("ss.png").unwrap();
-    let _ = surface.write_to_png(&mut screenshot_file);
+    match File::create(FILE_SNAPSHOTO_PNG )
+    {
+        Ok( mut ss_file ) =>
+        {
+            if let Err( x ) = surface.write_to_png(&mut ss_file )
+            {
+                error!( "{:?}", x );
+            }
+        }
+    ,   Err( x ) =>
+        {
+            error!( "{:?}", x );
+        }
+    }
 }
 
 fn make_theme_menu(
@@ -2412,7 +2441,6 @@ fn make_text_visibility_menu(
     menu.append( &menu_item_enable_text_time_zone );
     menu.append( &menu_item_enable_text_date );
     menu.append( &menu_item_enable_text_time );
-//    menu.append( &menu_item_enable_text_time_ampm );
     menu.append( &menu_item_enable_text_time_segment );
     menu.append( &menu_item_enable_text_time_segment_hour12 );
     menu.append( &SeparatorMenuItem::new() );
@@ -2574,14 +2602,15 @@ fn make_popup_menu(
             move |_|
             {
                 let about_dialog = AboutDialog::builder()
-                    .title( "title:hello_gtk" )
-                    .program_name( "hello_gtk" )
-                    .comments( "hello_gtk is a analogue clock." )
-                    .copyright( "Copyright © 2025 zuntan <>" )
-                    .version( "version" )
-                    .website( "https://github.com/zuntan/" )
-                    .authors( [ "authors:zuntan", ] )
-                    .artists( [ "artists:zuntan", ] )
+                    .title( ABOUT_TITLE )
+                    .program_name( ABOUT_PROGRAM_NAME )
+                    .comments( ABOUT_COMMENTS )
+                    .copyright( ABOUT_COPYRIGHT )
+                    .version( ABOUT_VERSION )
+                    .website( ABOUT_WEBSITE )
+                    .authors( ABOUT_AUTHORS )
+                    .artists( ABOUT_ARTISTS )
+                    // .documenters( ABOUT_DOCUMENTS )
                     .modal( true )
                     .destroy_with_parent( true )
                     .build()
@@ -2634,9 +2663,6 @@ fn make_popup_menu(
     menu
 }
 
-const UPDATE_CYCLE_SLOW: u64 = 100;
-const UPDATE_CYCLE_FAST: u64 = 25;
-
 fn get_timer_interval( is_fast: bool ) -> u64
 {
     if is_fast { UPDATE_CYCLE_FAST } else { UPDATE_CYCLE_SLOW }
@@ -2645,16 +2671,16 @@ fn main() {
 
     pretty_env_logger::init();
 
-    let app_info_file = ".hello_gtk";
+    let app_info_file = get_app_info_file();
 
     let app = Application::builder()
-        .application_id("net.zuntan.example")
+        .application_id( GTK_APPLICATION_ID )
         .build();
 
     let app_info = Rc::new( RefCell::new( AppInfo::new() ) );
 
     {
-        let file = File::open(app_info_file );
+        let file = File::open(&app_info_file );
 
         match file
         {
@@ -2703,9 +2729,9 @@ fn main() {
 
             let window = ApplicationWindow::builder()
                 .application(app)
-                .title("net.zuntan.example")
+                .title( GTK_APPLICATION_TITLE )
                 .decorated(false)
-                .tooltip_markup("example")
+                .tooltip_markup( GTK_APPLICATION_TOOLTIP )
                 .build();
 
             window.set_keep_above( app_info.borrow().always_on_top );
@@ -2819,7 +2845,7 @@ fn main() {
                 let toml_str = toml::to_string( app_info.as_ref() ).unwrap();
                 let toml_str = format!( "#TOML\n\n{}", toml_str );
 
-                let file = File::create(app_info_file );
+                let file = File::create(&app_info_file );
 
                 match file
                 {
