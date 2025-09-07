@@ -82,8 +82,6 @@ const ABOUT_WEBSITE: &str = "https://github.com/zuntan/";
 const ABOUT_AUTHORS: [&'static str; 1] = [ "zuntan" ];
 const ABOUT_ARTISTS: [&'static str; 1] = [ "zuntan" ];
 
-
-
 fn get_app_info_file() -> std::path::PathBuf
 {
     let mut ret = PathBuf::new();
