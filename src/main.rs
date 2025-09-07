@@ -66,21 +66,23 @@ const FILE_CLOCL_THEME_6_SVG: &str = "clock_theme_6.svg";
 const UPDATE_CYCLE_SLOW: u64 = 100;
 const UPDATE_CYCLE_FAST: u64 = 25;
 
-const FILE_APP_INFO: &str = ".hello_gtk";
+const FILE_APP_INFO: &str = ".svgclock-rs";
 const FILE_SNAPSHOTO_PNG: &str = "snapshot.png";
 
 const GTK_APPLICATION_ID: &str = "net.zuntan.svgclock-rs";
 const GTK_APPLICATION_TITLE: &str = "svgclock-rs";
 const GTK_APPLICATION_TOOLTIP: &str = "svgclock-rs";
 
+const AUTHOR_ZUNTAN: &str = "zuntan <>";
+
 const ABOUT_TITLE: &str = GTK_APPLICATION_TITLE;
 const ABOUT_PROGRAM_NAME: &str = "svgclock";
 const ABOUT_COMMENTS: &str = "svgclock-rs is a clock, using svg image.";
-const ABOUT_COPYRIGHT: &str = "Copyright © 2025 zuntan <>";
-const ABOUT_VERSION: &str = "Ver 0.1.0";
-const ABOUT_WEBSITE: &str = "https://github.com/zuntan/";
-const ABOUT_AUTHORS: [&'static str; 1] = [ "zuntan <>" ];
-const ABOUT_ARTISTS: [&'static str; 1] = [ "zuntan <>" ];
+const ABOUT_COPYRIGHT_STR: LazyLock< String > = LazyLock::new(||{ format!( "Copyright © 2025 {}", AUTHOR_ZUNTAN  ) } );
+const ABOUT_VERSION_STR: LazyLock< String > = LazyLock::new(||{ format!( "Ver. {}", env!( "CARGO_PKG_VERSION" ) ) } );
+const ABOUT_WEBSITE: &str = "https://github.com/zuntan/svgclock-rs";
+const ABOUT_AUTHORS: [&'static str; 1] = [ AUTHOR_ZUNTAN ];
+const ABOUT_ARTISTS: [&'static str; 1] = [ AUTHOR_ZUNTAN ];
 
 fn get_app_info_file() -> std::path::PathBuf
 {
@@ -2603,8 +2605,8 @@ fn make_popup_menu(
                     .title( ABOUT_TITLE )
                     .program_name( ABOUT_PROGRAM_NAME )
                     .comments( ABOUT_COMMENTS )
-                    .copyright( ABOUT_COPYRIGHT )
-                    .version( ABOUT_VERSION )
+                    .copyright( ABOUT_COPYRIGHT_STR.as_str() )
+                    .version( ABOUT_VERSION_STR.as_str() )
                     .website( ABOUT_WEBSITE )
                     .authors( ABOUT_AUTHORS )
                     .artists( ABOUT_ARTISTS )

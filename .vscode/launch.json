@@ -7,22 +7,22 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'hello_gtk'",
+            "name": "Debug executable 'svgclock-rs'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=hello_gtk",
-                    "--package=hello_gtk",
+                    "--bin=svgclock-rs",
+                    "--package=svgclock-rs",
                 ],
                 "filter": {
-                    "name": "hello_gtk",
+                    "name": "svgclock-rs",
                     "kind": "bin"
                 }
             },
             "args": [],
             "cwd": "${workspaceFolder}",
             "env": {
-                "RUST_LOG": "hello_gtk=debug",
+                "RUST_LOG": "svgclock-rs=debug",
             },
             "sourceMap": {
                 "/opt2/_dev": "/home/junichi/_dev"
