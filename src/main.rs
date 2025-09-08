@@ -78,14 +78,14 @@ const GTK_APPLICATION_ID: &str = "net.zuntan.svgclock-rs";
 const GTK_APPLICATION_TITLE: &str = "svgclock-rs";
 const GTK_APPLICATION_TOOLTIP: &str = "svgclock-rs";
 
-const AUTHOR_ZUNTAN: &str = "zuntan <>";
+const AUTHOR_ZUNTAN: &str = "zuntan <jun_n@momo.so-net.ne.jp>";
 
 const ABOUT_TITLE: &str = GTK_APPLICATION_TITLE;
 const ABOUT_PROGRAM_NAME: &str = "svgclock";
 const ABOUT_COMMENTS: &str = "svgclock-rs is a clock, using svg image.";
 const ABOUT_COPYRIGHT_STR: LazyLock< String > = LazyLock::new(||{ format!( "Copyright © 2025 {}", AUTHOR_ZUNTAN  ) } );
 const ABOUT_VERSION_STR: LazyLock< String > = LazyLock::new(||{ format!( "Ver. {}", env!( "CARGO_PKG_VERSION" ) ) } );
-const ABOUT_WEBSITE: &str = "https://github.com/zuntan/svgclock-rs";
+const ABOUT_WEBSITE: &str = "https://github.com/zuntan/svgclock-rs/";
 const ABOUT_AUTHORS: [&'static str; 1] = [ AUTHOR_ZUNTAN ];
 const ABOUT_ARTISTS: [&'static str; 1] = [ AUTHOR_ZUNTAN ];
 
