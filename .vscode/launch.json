@@ -23,6 +23,8 @@
             "cwd": "${workspaceFolder}",
             "env": {
                 "RUST_LOG": "svgclock-rs=debug",
+                "FIX_TIME": "",
+                "THEME_CUSTOM": "clock_theme_custom.svg",
             },
             "sourceMap": {
                 "/opt2/_dev": "/home/junichi/_dev"

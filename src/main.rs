@@ -648,6 +648,39 @@ struct ImageInfoConfig
 
 impl ImageInfoConfig
 {
+    fn get_theme_name( &self ) -> Option< String >
+    {
+        let mut ret = self.theme_name.clone();
+
+        if let Some( x ) = &ret
+        {
+            if x == ""
+            {
+                ret = None
+            }
+        }
+
+        ret
+    }
+
+    fn get_theme_description( &self ) -> Option< String >
+    {
+        let mut ret = self.theme_description.clone();
+
+        if let Some( x ) = &ret
+        {
+            if x == ""
+            {
+                ret = None
+            }
+        }
+
+        ret
+    }
+}
+
+impl ImageInfoConfig
+{
     const fn new() -> Self
     {
         Self
@@ -1267,26 +1300,7 @@ impl AppInfo
         {
             if let Some( image_info ) = load_theme( theme, self.theme_custom.clone() )
             {
-                let mut name = image_info.config.theme_name;
-                let mut desc = image_info.config.theme_description;
-
-                if let Some( x ) = &name
-                {
-                    if x == ""
-                    {
-                        name = None
-                    }
-                }
-
-                if let Some( x ) = &desc
-                {
-                    if x == ""
-                    {
-                        desc = None
-                    }
-                }
-
-                self.theme_names.insert( theme,( name, desc ) );
+                self.theme_names.insert( theme,( image_info.config.get_theme_name(), image_info.config.get_theme_description() ) );
             }
         }
 
@@ -2032,11 +2046,23 @@ fn make_theme_menu(
             menu_item.connect_activate(
                 move |_|
                 {
-                    let mut app_info = app_info.borrow_mut();
-                    app_info.theme = ait;
-                    app_info.zoom = 100;
-                    app_info.zoom_update = true;
-                    image_info.replace( load_theme( app_info.theme, app_info.theme_custom.clone() ).unwrap() );
+                    let theme_custom = app_info.borrow().theme_custom.clone();
+
+                    match load_theme( ait, theme_custom )
+                    {
+                        Some( _image_info ) =>
+                        {
+                            let mut app_info = app_info.borrow_mut();
+
+                            app_info.theme = ait;
+                            // app_info.zoom = 100;
+                            app_info.zoom_update = true;
+                            app_info.theme_names.insert( ait,( _image_info.config.get_theme_name(), _image_info.config.get_theme_description() ) );
+
+                            image_info.replace( _image_info );
+                        }
+                    ,   _ => {}
+                    }
                 }
             );
         }
