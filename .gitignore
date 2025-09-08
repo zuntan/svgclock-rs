@@ -1,6 +1,3 @@
 /target
-clock_impl_*
 Cargo.lock
-mask.png
-tree.txt
 .obsidian
