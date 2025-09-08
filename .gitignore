@@ -1,3 +1,7 @@
 /target
 Cargo.lock
 .obsidian
+/GTK3_Gvsbuild.x86_64-pc-windows
+/svgclock-rs.x86_64-pc-windows
+svgclock-rs.zip
+.svgclock-rs
