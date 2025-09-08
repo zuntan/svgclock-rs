@@ -25,14 +25,14 @@
      inkscape:document-units="px"
      showgrid="false"
      inkscape:zoom="5.1754899"
-     inkscape:cx="172.64066"
+     inkscape:cx="123.56318"
      inkscape:cy="53.135066"
      inkscape:window-width="1965"
      inkscape:window-height="1211"
      inkscape:window-x="512"
      inkscape:window-y="117"
      inkscape:window-maximized="0"
-     inkscape:current-layer="g7773" />
+     inkscape:current-layer="layer7" />
   <defs
      id="defs2">
     <rect
@@ -94,7 +94,7 @@
          transform="scale(1.1277966,0.88668471)"><tspan
            x="66.386314"
            y="-31.636047"
-           id="tspan10058">{{time_zone}}</tspan></text>
+           id="tspan2058">{{time_zone}}</tspan></text>
     </g>
     <g
        id="g5340"
@@ -665,26 +665,18 @@
        transform="matrix(2.4910118,0,0,2.8014271,-22.797843,-233.44508)"><tspan
          x="15.103516"
          y="131.1027"
-         id="tspan10060">theme_name = &quot;Green&quot;
+         id="tspan2060">theme_name = &quot;Green&quot;
 </tspan><tspan
          x="15.103516"
          y="139.24984"
-         id="tspan10062">theme_description = &quot;With digit.&quot;
+         id="tspan2062">theme_description = &quot;With digit.&quot;
 </tspan><tspan
          x="15.103516"
          y="147.39698"
-         id="tspan10064">with_second = true
+         id="tspan2064">with_text_time_zone = true
 </tspan><tspan
          x="15.103516"
          y="155.54412"
-         id="tspan10066">with_sub_second = false
-</tspan><tspan
-         x="15.103516"
-         y="163.69126"
-         id="tspan10068">with_text_time_zone = true
-</tspan><tspan
-         x="15.103516"
-         y="171.8384"
-         id="tspan10070">with_text_segment = true</tspan></text>
+         id="tspan2066">with_text_segment = true</tspan></text>
   </g>
 </svg>

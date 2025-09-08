@@ -26,8 +26,8 @@
      inkscape:document-units="px"
      showgrid="false"
      inkscape:zoom="2.8367135"
-     inkscape:cx="109.10513"
-     inkscape:cy="81.784783"
+     inkscape:cx="19.564894"
+     inkscape:cy="194.59138"
      inkscape:window-width="1965"
      inkscape:window-height="1211"
      inkscape:window-x="398"
@@ -288,26 +288,22 @@
        inkscape:label="aaaa"
        transform="scale(0.93565221,1.0687732)"><tspan
          sodipodi:role="line"
-         id="tspan11535">#toml</tspan><tspan
+         id="tspan1491">#toml</tspan><tspan
          sodipodi:role="line"
-         id="tspan11537">theme_name = &quot;Simple&quot;</tspan><tspan
+         id="tspan1493">theme_name = &quot;Cool&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan11539">theme_description = &quot;very simple&quot;</tspan><tspan
+         id="tspan1495">theme_description = &quot;There's a hole in the middle.&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan11541">with_second = true</tspan><tspan
+         id="tspan1497">with_text_time_zone = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan11543">with_sub_second = false</tspan><tspan
+         id="tspan1499">with_text_date = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan11545">with_text_time_zone = false</tspan><tspan
+         id="tspan1501">with_text_time = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan11547">with_text_date = false</tspan><tspan
+         id="tspan1503">with_text_segment = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan11549">with_text_time = false</tspan><tspan
+         id="tspan1505"># enable_rotate_center_circle = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan11551">with_text_segment = false</tspan><tspan
-         sodipodi:role="line"
-         id="tspan11553"># enable_rotate_center_circle = false</tspan><tspan
-         sodipodi:role="line"
-         id="tspan11555">enable_update_region_every_time = true</tspan></text>
+         id="tspan1507">enable_update_region_every_time = true</tspan></text>
   </g>
 </svg>

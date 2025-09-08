@@ -26,14 +26,14 @@
      inkscape:document-units="px"
      showgrid="false"
      inkscape:zoom="3.659624"
-     inkscape:cx="83.478521"
-     inkscape:cy="159.71586"
+     inkscape:cx="14.072484"
+     inkscape:cy="203.70945"
      inkscape:window-width="1965"
      inkscape:window-height="1248"
      inkscape:window-x="274"
      inkscape:window-y="61"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer4" />
+     inkscape:current-layer="layer8" />
   <defs
      id="defs2">
     <linearGradient
@@ -453,23 +453,19 @@
        y="331.51291"
        id="text9134"><tspan
          sodipodi:role="line"
-         id="tspan9186">#toml</tspan><tspan
+         id="tspan2377">#toml</tspan><tspan
          sodipodi:role="line"
-         id="tspan9188">theme_name = &quot;Monotone&quot;</tspan><tspan
+         id="tspan2379">theme_name = &quot;Monotone&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan9190">theme_description = &quot;Without sub second.&quot;</tspan><tspan
+         id="tspan2381">theme_description = &quot;Without sub second.&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan9192">with_second = true</tspan><tspan
+         id="tspan2383">with_text_time_zone = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan9194">with_sub_second = false</tspan><tspan
+         id="tspan2385">with_text_date = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan9196">with_text_time_zone = false</tspan><tspan
+         id="tspan2387">with_text_time = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan9198">with_text_date = false</tspan><tspan
-         sodipodi:role="line"
-         id="tspan9200">with_text_time = false</tspan><tspan
-         sodipodi:role="line"
-         id="tspan9202">with_text_segment = false</tspan></text>
+         id="tspan2389">with_text_segment = false</tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"

@@ -28,13 +28,13 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      showgrid="false"
-     inkscape:zoom="1.2938725"
-     inkscape:cx="-76.900933"
-     inkscape:cy="274.7566"
+     inkscape:zoom="0.64693625"
+     inkscape:cx="-523.23548"
+     inkscape:cy="365.56925"
      inkscape:window-width="1965"
      inkscape:window-height="1028"
-     inkscape:window-x="115"
-     inkscape:window-y="273"
+     inkscape:window-x="223"
+     inkscape:window-y="217"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer5" />
   <defs
@@ -1116,22 +1116,18 @@
        y="102.99798"
        id="text467"><tspan
          sodipodi:role="line"
-         id="tspan964">#toml</tspan><tspan
+         id="tspan2088">#toml</tspan><tspan
          sodipodi:role="line"
-         id="tspan966">theme_name = &quot;&quot;</tspan><tspan
+         id="tspan2090">theme_name = &quot;Modern&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan968">theme_description = &quot;&quot;</tspan><tspan
+         id="tspan2092">theme_description = &quot;With digit.&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan970">with_second = true</tspan><tspan
+         id="tspan2094">with_text_time_zone = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan972">with_sub_second = false</tspan><tspan
+         id="tspan2096">with_text_date = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan974">with_text_time_zone = false</tspan><tspan
+         id="tspan2098">with_text_time = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan976">with_text_date = false</tspan><tspan
-         sodipodi:role="line"
-         id="tspan978">with_text_time = false</tspan><tspan
-         sodipodi:role="line"
-         id="tspan980">with_text_segment = true</tspan></text>
+         id="tspan2100">with_text_segment = true</tspan></text>
   </g>
 </svg>

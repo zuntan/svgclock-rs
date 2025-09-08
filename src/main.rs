@@ -48,12 +48,13 @@ use linked_hash_map::LinkedHashMap;
 const ENABLE_FILE_INCLUDE: bool = true;
 
 const INCLUDE_BYTES_LOGO_PNG: &'static [u8] = include_bytes!( "../logo.png" );
-const INCLUDE_BYTES_CLOCL_THEME_1_SVG: &'static [u8] = include_bytes!( "../clock_theme_1.svg");
-const INCLUDE_BYTES_CLOCL_THEME_2_SVG: &'static [u8] = include_bytes!( "../clock_theme_2.svg");
-const INCLUDE_BYTES_CLOCL_THEME_3_SVG: &'static [u8] = include_bytes!( "../clock_theme_3.svg");
-const INCLUDE_BYTES_CLOCL_THEME_4_SVG: &'static [u8] = include_bytes!( "../clock_theme_4.svg");
-// const INCLUDE_BYTES_CLOCL_THEME_5_SVG: &'static [u8] = include_bytes!( "../clock_theme_5.svg");
-// const INCLUDE_BYTES_CLOCL_THEME_6_SVG: &'static [u8] = include_bytes!( "../clock_theme_6.svg");
+const INCLUDE_BYTES_CLOCL_THEME_1_SVG: &'static [u8] = include_bytes!( "../clock_theme_1.svg" );
+const INCLUDE_BYTES_CLOCL_THEME_2_SVG: &'static [u8] = include_bytes!( "../clock_theme_2.svg" );
+const INCLUDE_BYTES_CLOCL_THEME_3_SVG: &'static [u8] = include_bytes!( "../clock_theme_3.svg" );
+const INCLUDE_BYTES_CLOCL_THEME_4_SVG: &'static [u8] = include_bytes!( "../clock_theme_4.svg" );
+const INCLUDE_BYTES_CLOCL_THEME_5_SVG: &'static [u8] = include_bytes!( "../clock_theme_5.svg" );
+const INCLUDE_BYTES_CLOCL_THEME_6_SVG: &'static [u8] = include_bytes!( "../clock_theme_6.svg" );
+const INCLUDE_BYTES_CLOCL_THEME_7_SVG: &'static [u8] = include_bytes!( "../clock_theme_7.svg" );
 
 const FILE_LOGO_PNG: &str = "logo.png";
 const FILE_CLOCL_THEME_1_SVG: &str = "clock_theme_1.svg";
@@ -62,6 +63,7 @@ const FILE_CLOCL_THEME_3_SVG: &str = "clock_theme_3.svg";
 const FILE_CLOCL_THEME_4_SVG: &str = "clock_theme_4.svg";
 const FILE_CLOCL_THEME_5_SVG: &str = "clock_theme_5.svg";
 const FILE_CLOCL_THEME_6_SVG: &str = "clock_theme_6.svg";
+const FILE_CLOCL_THEME_7_SVG: &str = "clock_theme_7.svg";
 
 const UPDATE_CYCLE_SLOW: u64 = 100;
 const UPDATE_CYCLE_FAST: u64 = 25;
@@ -545,7 +547,7 @@ fn parse_xml_center(
 fn filter_xml(
     src_buf: &[u8],
     target: LayerTarget,
-) -> Result< Vec<u8>, Box< dyn Error > >
+) -> Result< Option< Vec<u8> >, Box< dyn Error > >
 {
     const TARGET_TAG: &[u8] = "g".as_bytes();
     const TARGET_ATTR_KEY_GROUPMODE: &[u8] = "inkscape:groupmode".as_bytes();
@@ -553,6 +555,8 @@ fn filter_xml(
     const TARGET_ATTR_KEY_LABEL: &[u8] = "inkscape:label".as_bytes();
 
     let mut writer = quick_xml::Writer::new(Cursor::new(Vec::<u8>::new()));
+
+    let mut found = false;
 
     let mut depth = 0;
     let mut depth_dis_output = -1;
@@ -582,6 +586,7 @@ fn filter_xml(
                                 {
                                     if attr.value.as_ref() == target.to_string().as_bytes() {
                                         output = true;
+                                        found |= true;
                                     }
                                 }
                             }
@@ -614,7 +619,15 @@ fn filter_xml(
         }
     }
 
-    Ok(writer.into_inner().into_inner())
+    if found
+    {
+        let inner_buf = writer.into_inner().into_inner();
+        Ok( Some( inner_buf ) )
+    }
+    else
+    {
+        Ok( None )
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -622,8 +635,6 @@ struct ImageInfoConfig
 {
     theme_name: Option< String >,
     theme_description: Option< String >,
-    with_sub_second: Option< bool >,
-    with_second: Option< bool >,
     with_text_time_zone: Option< bool >,
     with_text_date: Option< bool >,
     with_text_time: Option< bool >,
@@ -640,8 +651,6 @@ impl ImageInfoConfig
         {
             theme_name: None,
             theme_description: None,
-            with_second: None, // = true
-            with_sub_second: None, // = true
             with_text_time_zone: None, // = false
             with_text_date: None, // = false
             with_text_time: None, // = false
@@ -653,16 +662,6 @@ impl ImageInfoConfig
 
     fn update_default( &mut self )
     {
-        if self.with_second.is_none()
-        {
-            self.with_second = Some( true );
-        }
-
-        if self.with_sub_second.is_none()
-        {
-            self.with_sub_second = Some( true );
-        }
-
         if self.with_text_time_zone.is_none()
         {
             self.with_text_time_zone = Some( false );
@@ -805,6 +804,18 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
                             {
                                 Some( INCLUDE_BYTES_CLOCL_THEME_4_SVG.to_vec() )
                             }
+                        ,   AppInfoTheme::Theme5 =>
+                            {
+                                Some( INCLUDE_BYTES_CLOCL_THEME_5_SVG.to_vec() )
+                            }
+                        ,   AppInfoTheme::Theme6 =>
+                            {
+                                Some( INCLUDE_BYTES_CLOCL_THEME_6_SVG.to_vec() )
+                            }
+                        ,   AppInfoTheme::Theme7 =>
+                            {
+                                Some( INCLUDE_BYTES_CLOCL_THEME_7_SVG.to_vec() )
+                            }
                         ,   _ => { None }
                         }
                     }
@@ -827,6 +838,7 @@ fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< 
                         ,   AppInfoTheme::Theme4 => FILE_CLOCL_THEME_4_SVG
                         ,   AppInfoTheme::Theme5 => FILE_CLOCL_THEME_5_SVG
                         ,   AppInfoTheme::Theme6 => FILE_CLOCL_THEME_6_SVG
+                        ,   AppInfoTheme::Theme7 => FILE_CLOCL_THEME_7_SVG
                         ,   _ => ""
                         };
 
@@ -886,7 +898,7 @@ fn load_xml( src_buf: &Vec<u8> ) -> ImageInfo
 
     let mut ret = ImageInfo::new();
 
-    if let Ok( src_xml ) = src_config
+    if let Ok( Some( src_xml )  ) = src_config
     {
         if let Ok( config ) = parse_xml_config( &src_xml )
         {
@@ -901,7 +913,8 @@ fn load_xml( src_buf: &Vec<u8> ) -> ImageInfo
         }
     }
 
-    if let Ok(src_xml) = src_base {
+    if let Ok( Some( src_xml ) ) = src_base
+    {
         if let Ok(result) = parse_xml_sz_and_vbox(&src_xml ) {
             ret.sz = result.0;
             ret.viewbox_xy = result.1;
@@ -912,26 +925,26 @@ fn load_xml( src_buf: &Vec<u8> ) -> ImageInfo
         ret.bytes_base = Some(src_xml);
     }
 
-    if let Ok(src_xml) = src_base_text {
+    if let Ok( Some( src_xml ) ) = src_base_text {
         ret.bytes_base_text = Some(src_xml);
     }
 
-    if let Ok(src_xml) = src_long_handle {
+    if let Ok( Some( src_xml ) ) = src_long_handle {
         ret.svgh_long_handle = fn_make_svg_handle( &src_xml );
         ret.bytes_long_handle = Some(src_xml);
     }
 
-    if let Ok(src_xml) = src_short_handle {
+    if let Ok( Some( src_xml) ) = src_short_handle {
         ret.svgh_short_handle = fn_make_svg_handle( &src_xml );
         ret.bytes_short_handle = Some(src_xml);
     }
 
-    if let Ok(src_xml) = src_second_handle {
+    if let Ok( Some( src_xml) ) = src_second_handle {
         ret.svgh_second_handle = fn_make_svg_handle( &src_xml );
         ret.bytes_second_handle = Some(src_xml);
     }
 
-    if let Ok(src_xml) = src_center_circle {
+    if let Ok( Some( src_xml) ) = src_center_circle {
 
         if let Ok(center) = parse_xml_center(&src_xml,LayerTarget::CenterCircle ) {
             ret.center = center;
@@ -943,17 +956,17 @@ fn load_xml( src_buf: &Vec<u8> ) -> ImageInfo
         ret.bytes_center_circle = Some(src_xml);
     }
 
-    if let Ok(src_xml) = src_sub_second_base {
+    if let Ok( Some( src_xml) ) = src_sub_second_base {
         ret.svgh_sub_second_base = fn_make_svg_handle( &src_xml );
         ret.bytes_sub_second_base = Some(src_xml);
     }
 
-    if let Ok(src_xml) = src_sub_second_handle {
+    if let Ok( Some( src_xml) ) = src_sub_second_handle {
         ret.svgh_sub_second_handle = fn_make_svg_handle( &src_xml );
         ret.bytes_sub_second_handle = Some(src_xml);
     }
 
-    if let Ok(src_xml) = src_sub_second_center_circle {
+    if let Ok( Some( src_xml) ) = src_sub_second_center_circle {
 
         if let Ok(center) = parse_xml_center(&src_xml,LayerTarget::SubSecondCenterCircle ) {
             ret.center_sub_second = center;
@@ -1037,6 +1050,7 @@ enum AppInfoTheme
 ,   Theme4
 ,   Theme5
 ,   Theme6
+,   Theme7
 ,   Custom
 }
 
@@ -1138,8 +1152,8 @@ struct AppInfo
     always_on_top: bool
 ,   lock_pos: bool
 ,   show_seconds: bool
-,   enable_sub_second_hand: bool
-,   enable_second_hand_smoothly: bool
+,   enable_sub_second_handle: bool
+,   enable_second_handle_smoothly: bool
 ,   enable_text_time_zone: bool
 ,   enable_text_date: bool
 ,   enable_text_time: bool
@@ -1178,8 +1192,8 @@ impl AppInfo
             always_on_top: true
         ,   lock_pos: false
         ,   show_seconds: true
-        ,   enable_sub_second_hand: false
-        ,   enable_second_hand_smoothly: true
+        ,   enable_sub_second_handle: false
+        ,   enable_second_handle_smoothly: true
         ,   enable_text_time_zone: true
         ,   enable_text_date: true
         ,   enable_text_time: true
@@ -1528,7 +1542,7 @@ fn draw_watch(
     let angle_hour = time_secs as f64 / ( 12.0 * 60.0 * 60.0 ) * 360.0;
     let angle_min = time_secs as f64 / ( 60.0 * 60.0 ) * 360.0;
 
-    let angle_sec_delta = if app_info.enable_second_hand_smoothly { time_now.timestamp_subsec_millis() as f64 / 1000.0 } else { 0.0 };
+    let angle_sec_delta = if app_info.enable_second_handle_smoothly { time_now.timestamp_subsec_millis() as f64 / 1000.0 } else { 0.0 };
     let angle_sec = ( time_now.second() as f64 + angle_sec_delta ) / 60.0 * 360.0;
 
     // paint base BLACK ( for not region )
@@ -1834,9 +1848,8 @@ fn draw_watch(
 
     // render sub_second
     if      app_info.show_seconds
-        &&  app_info.enable_sub_second_hand
-        &&  let Some(x) = image_info.config.with_sub_second
-        &&  x
+        &&  app_info.enable_sub_second_handle
+        &&  image_info.svgh_sub_second_handle.is_some()
     {
         // render sub_second_base
         if let Some( svgh ) = image_info.svgh_sub_second_base.as_ref()
@@ -1879,9 +1892,8 @@ fn draw_watch(
 
     // render second_handle
     if      app_info.show_seconds
-        && !app_info.enable_sub_second_hand
-        &&  let Some( x ) = image_info.config.with_second
-        &&  x
+        && !app_info.enable_sub_second_handle
+        &&  image_info.svgh_second_handle.is_some()
     {
         if let Some( svgh ) = image_info.svgh_second_handle.as_ref()
         {
@@ -2458,12 +2470,8 @@ fn make_popup_menu(
     logo: Option<Pixbuf>,
 ) -> Menu
 {
-    let with_second =
-        if let Some( x ) = image_info.borrow().config.with_second && x { true } else { false }
-        ;
-    let with_sub_second =
-        if let Some( x ) = image_info.borrow().config.with_sub_second && x { true } else { false }
-        ;
+    let with_second_handle = image_info.borrow().svgh_second_handle.is_some();
+    let with_sub_second_handle = image_info.borrow().svgh_sub_second_handle.is_some();
 
     let menu = Menu::new();
 
@@ -2507,7 +2515,7 @@ fn make_popup_menu(
 
     let menu_item_pref_show_seconds = CheckMenuItem::with_label( "Show Seconds" );
 
-    menu_item_pref_show_seconds.set_sensitive( with_second );
+    menu_item_pref_show_seconds.set_sensitive( with_second_handle );
     menu_item_pref_show_seconds.set_active( app_info.borrow().show_seconds );
 
     {
@@ -2523,36 +2531,36 @@ fn make_popup_menu(
         );
     }
 
-    let menu_item_pref_enable_sub_second_hand = CheckMenuItem::with_label( "Enable sub second hand" );
+    let menu_item_pref_enable_sub_second_handle = CheckMenuItem::with_label( "Enable sub second handle" );
 
-    menu_item_pref_enable_sub_second_hand.set_sensitive( with_sub_second );
-    menu_item_pref_enable_sub_second_hand.set_active( app_info.borrow().enable_sub_second_hand );
+    menu_item_pref_enable_sub_second_handle.set_sensitive( with_sub_second_handle );
+    menu_item_pref_enable_sub_second_handle.set_active( app_info.borrow().enable_sub_second_handle );
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_enable_sub_second_hand.connect_activate( move |_|
+        menu_item_pref_enable_sub_second_handle.connect_activate( move |_|
             {
                 let mut app_info = app_info.borrow_mut();
-                app_info.enable_sub_second_hand = !app_info.enable_sub_second_hand;
+                app_info.enable_sub_second_handle = !app_info.enable_sub_second_handle;
                 da.queue_draw();
             }
         );
     }
 
-    let menu_item_pref_enable_second_hand_smoothly  = CheckMenuItem::with_label( "Enable second hand smoothly" );
+    let menu_item_pref_enable_second_handle_smoothly  = CheckMenuItem::with_label( "Enable second handle smoothly" );
 
-    menu_item_pref_enable_second_hand_smoothly .set_active( app_info.borrow().enable_second_hand_smoothly );
+    menu_item_pref_enable_second_handle_smoothly .set_active( app_info.borrow().enable_second_handle_smoothly );
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_enable_second_hand_smoothly.connect_activate( move |_|
+        menu_item_pref_enable_second_handle_smoothly.connect_activate( move |_|
             {
                 let mut app_info = app_info.borrow_mut();
-                app_info.enable_second_hand_smoothly  = !app_info.enable_second_hand_smoothly ;
+                app_info.enable_second_handle_smoothly  = !app_info.enable_second_handle_smoothly ;
                 da.queue_draw();
             }
         );
@@ -2573,8 +2581,8 @@ fn make_popup_menu(
     menu_pref.append( &menu_item_pref_lock_pos );
     menu_pref.append( &SeparatorMenuItem::new() );
     menu_pref.append( &menu_item_pref_show_seconds );
-    menu_pref.append( &menu_item_pref_enable_sub_second_hand );
-    menu_pref.append( &menu_item_pref_enable_second_hand_smoothly );
+    menu_pref.append( &menu_item_pref_enable_sub_second_handle );
+    menu_pref.append( &menu_item_pref_enable_second_handle_smoothly );
     menu_pref.append( &SeparatorMenuItem::new() );
     menu_pref.append( &menu_item_pref_text_visibility );
     menu_pref.append( &SeparatorMenuItem::new() );

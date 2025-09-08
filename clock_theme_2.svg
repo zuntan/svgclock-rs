@@ -28,14 +28,14 @@
      inkscape:document-units="px"
      showgrid="false"
      inkscape:zoom="2.5877449"
-     inkscape:cx="173.70336"
-     inkscape:cy="227.80452"
+     inkscape:cx="68.978979"
+     inkscape:cy="228.96384"
      inkscape:window-width="1965"
      inkscape:window-height="1248"
      inkscape:window-x="398"
      inkscape:window-y="155"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer4" />
+     inkscape:current-layer="layer2" />
   <defs
      id="defs489" />
   <g
@@ -221,19 +221,19 @@
      transform="translate(-14.837476,-108.82481)">
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.93888832px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#ff5555;stroke-width:1;stroke-linecap:round"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.93888832px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#000080;stroke-width:1;stroke-linecap:round"
        x="54.950611"
        y="172.07288"
        id="text1047"
        text-anchor="middle"><tspan
          sodipodi:role="line"
          id="tspan1045"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.93888832px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:1"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.93888832px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:1;fill:#000080"
          x="54.950611"
          y="172.07288">{{time}}</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.93888832px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#ff5555;stroke-width:1;stroke-linecap:round"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.93888832px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#000080;stroke-width:1;stroke-linecap:round"
        x="55.051853"
        y="133.54732"
        id="text1047-7"
@@ -244,7 +244,7 @@
          y="133.54732">{{date}}</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.93888832px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#ff5555;stroke-width:1;stroke-linecap:round"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.93888832px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#000080;stroke-width:1;stroke-linecap:round"
        x="54.972855"
        y="165.15405"
        id="text1047-7-5"
@@ -380,22 +380,18 @@
        y="84.240173"
        id="text842"><tspan
          sodipodi:role="line"
-         id="tspan896">#toml</tspan><tspan
+         id="tspan3015">#toml</tspan><tspan
          sodipodi:role="line"
-         id="tspan898">theme_name = &quot;&quot;</tspan><tspan
+         id="tspan3017">theme_name = &quot;Simple&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan900">theme_description = &quot;&quot;</tspan><tspan
+         id="tspan3019">theme_description = &quot;With sub_second, date, time_zone, time&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan902">with_second = true</tspan><tspan
+         id="tspan3021">with_text_time_zone = true</tspan><tspan
          sodipodi:role="line"
-         id="tspan904">with_sub_second = true</tspan><tspan
+         id="tspan3023">with_text_date = true</tspan><tspan
          sodipodi:role="line"
-         id="tspan906">with_text_time_zone = true</tspan><tspan
+         id="tspan3025">with_text_time = true</tspan><tspan
          sodipodi:role="line"
-         id="tspan908">with_text_date = true</tspan><tspan
-         sodipodi:role="line"
-         id="tspan910">with_text_time = true</tspan><tspan
-         sodipodi:role="line"
-         id="tspan912">with_text_segment = false</tspan></text>
+         id="tspan3027">with_text_segment = false</tspan></text>
   </g>
 </svg>
