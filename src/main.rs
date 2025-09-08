@@ -45,6 +45,9 @@ use chrono::{ DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike, Ut
 
 use linked_hash_map::LinkedHashMap;
 
+const ENV_KEY_THEME_CUSTOM: &str = "THEME_CUSTOM";
+const ENV_KEY_FIX_TIME: &str = "FIX_TIME";
+
 const ENABLE_FILE_INCLUDE: bool = true;
 
 const INCLUDE_BYTES_LOGO_PNG: &'static [u8] = include_bytes!( "../logo.png" );
@@ -1226,7 +1229,7 @@ impl AppInfo
         self.time_disp_st = None;
 
         self.theme_custom =
-            if let Ok( x ) = std::env::var( "THEME_CUSTOM" )
+            if let Ok( x ) = std::env::var( ENV_KEY_THEME_CUSTOM )
             {
                 Some( x )
             }
@@ -1237,7 +1240,7 @@ impl AppInfo
             ;
 
         self.time_disp_force =
-            if let Ok( x ) = std::env::var( "FIX_TIME" )
+            if let Ok( x ) = std::env::var( ENV_KEY_FIX_TIME )
             {
                 if let Ok( x ) = NaiveTime::parse_from_str( &x, "%H:%M:%S")
                 {
