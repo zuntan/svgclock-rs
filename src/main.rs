@@ -50,7 +50,7 @@ const ENV_KEY_FIX_TIME: &str = "FIX_TIME";
 
 const ENABLE_FILE_INCLUDE: bool = true;
 
-const INCLUDE_BYTES_LOGO_PNG: &'static [u8] = include_bytes!("../logo.png");
+const INCLUDE_BYTES_LOGO_PNG: &'static [u8] = include_bytes!("../logo128.png");
 const INCLUDE_BYTES_CLOCL_THEME_1_SVG: &'static [u8] = include_bytes!("../clock_theme_1.svg");
 const INCLUDE_BYTES_CLOCL_THEME_2_SVG: &'static [u8] = include_bytes!("../clock_theme_2.svg");
 const INCLUDE_BYTES_CLOCL_THEME_3_SVG: &'static [u8] = include_bytes!("../clock_theme_3.svg");

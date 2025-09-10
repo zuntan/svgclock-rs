@@ -3,6 +3,14 @@ name = "svgclock-rs"
 version = "0.1.0"
 edition = "2024"
 
+license = "MIT OR Apache-2.0"
+description = """\
+svgclock-rs is a clock, using svg image. \
+"""
+homepage = "https://github.com/zuntan/svgclock-rs/"
+repository = "https://github.com/zuntan/svgclock-rs/"
+authors = [ "zuntan <jun_n@momo.so-net.ne.jp>" ]
+
 [dependencies]
 log = "0.4.27"
 pretty_env_logger = "0.5.0"
@@ -44,3 +52,16 @@ codegen-units = 1
 panic = "abort"
 
 strip = "symbols"
+
+
+[package.metadata.deb]
+copyright = "Copyright © 2025 zuntan <jun_n@momo.so-net.ne.jp>"
+section = "utils"
+
+assets = [
+    ["target/release/svgclock-rs",  "usr/bin/", "755"],
+    ["svgclock-rs.desktop",         "usr/share/applications/", "644"],
+    ["logo128.png",                 "usr/share/icons/hicolor/128x128/apps/svgclock-rs.png", "644"],
+    ["logo48.png",                  "usr/share/icons/hicolor/48x48/apps/svgclock-rs.png", "644"],
+    ["clock_theme_*svg",            "usr/share/svgclock-rs/theme/", "644"],
+]

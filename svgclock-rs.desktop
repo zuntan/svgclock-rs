@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+GenericName=svgclock-rs
+Name=svgclock-rs
+Comment=svgclock-rs is a clock, using svg image.
+Exec=svgclock-rs
+Icon=/usr/share/icons/hicolor/128x128/apps/svgclock-rs.png
+Terminal=false
+Type=Application
+Categories=Utility;Clock;

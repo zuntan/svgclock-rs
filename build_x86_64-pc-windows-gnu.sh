@@ -6,13 +6,14 @@
 
 GTK_URL=https://github.com/wingtk/gvsbuild/releases/download/2025.8.0/GTK3_Gvsbuild_2025.8.0_x64.zip
 
-GTK3_LIB=`realpath ./GTK3_Gvsbuild.x86_64-pc-windows`
+GTK3_LIB=`realpath ./target/GTK3_Gvsbuild.x86_64-pc-windows`
 GTK_ZIP=`basename $GTK_URL`
 
 TARGET_EXE=target/x86_64-pc-windows-gnu/release/svgclock-rs.exe
 
-ZIP_DIR=`realpath ./svgclock-rs.x86_64-pc-windows`
-ZIP_FILE=`realpath ./svgclock-rs.zip`
+ZIP_TARGET=`realpath ./target`
+ZIP_DIR=$ZIP_TARGET/svgclock-rs.x86_64-pc-windows
+ZIP_FILE=$ZIP_TARGET/svgclock-rs.zip
 
 if [ ! -d $GTK3_LIB ]; then
     echo download $GTK_ZIP
@@ -30,7 +31,8 @@ echo $PKG_CONFIG_LIBDIR
 echo $PKG_CONFIG_SYSROOT_DIR_x86_64_pc_windows_gnu
 echo $RUSTFLAGS
 
-# cargo clean           --target x86_64-pc-windows-gnu
+
+# cargo clean --release --target x86_64-pc-windows-gnu
 # cargo build --release --target x86_64-pc-windows-gnu
 
 if [ -d $ZIP_DIR ]; then
@@ -38,6 +40,9 @@ if [ -d $ZIP_DIR ]; then
 fi
 
 mkdir $ZIP_DIR
+mkdir $ZIP_DIR/theme
+
+cp clock_theme*svg $ZIP_DIR/theme
 
 DLL_AND_EXE="
 gspawn-win64-helper.exe
@@ -73,5 +78,6 @@ xml2-16.dll
 
 cp $TARGET_EXE $ZIP_DIR
 ( cd $GTK3_LIB/bin && tar c $DLL_AND_EXE ) | ( cd $ZIP_DIR && tar xv )
-echo $ZIP_FILE
-zip $ZIP_FILE `realpath --relative-base=. $ZIP_DIR`/*
+echo "xxx" $ZIP_FILE
+echo `realpath --relative-base=$ZIP_TARGET $ZIP_DIR`
+( cd $ZIP_TARGET && zip $ZIP_FILE `realpath --relative-base=$ZIP_TARGET $ZIP_DIR`/* )
