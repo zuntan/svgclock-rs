@@ -59,7 +59,7 @@ const INCLUDE_BYTES_CLOCL_THEME_5_SVG: &'static [u8] = include_bytes!("../clock_
 const INCLUDE_BYTES_CLOCL_THEME_6_SVG: &'static [u8] = include_bytes!("../clock_theme_6.svg");
 const INCLUDE_BYTES_CLOCL_THEME_7_SVG: &'static [u8] = include_bytes!("../clock_theme_7.svg");
 
-const FILE_LOGO_PNG: &str = "logo.png";
+const FILE_LOGO_PNG: &str = "logo128.png";
 const FILE_CLOCL_THEME_1_SVG: &str = "clock_theme_1.svg";
 const FILE_CLOCL_THEME_2_SVG: &str = "clock_theme_2.svg";
 const FILE_CLOCL_THEME_3_SVG: &str = "clock_theme_3.svg";
