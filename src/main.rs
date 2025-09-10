@@ -4,23 +4,23 @@ extern crate log;
 
 /* use std::sync::{Arc, Mutex}; */
 
+use std::convert::AsRef;
+use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{io::Cursor, str};
-use std::convert::AsRef;
-use std::error::Error;
 
-use std::rc::Rc;
 use std::cell::RefCell;
-use std::sync::LazyLock;
-use std::f64::consts::PI;
 use std::collections::HashMap;
+use std::f64::consts::PI;
+use std::rc::Rc;
+use std::sync::LazyLock;
 
 // use log::{Level, log_enabled};
 
-use strum::{ IntoEnumIterator };
+use strum::IntoEnumIterator;
 
 use serde::{Deserialize, Serialize};
 
@@ -28,12 +28,12 @@ use glam::{DAffine2, DMat2, DVec2, IVec2};
 use quick_xml::events::{BytesRef, BytesStart};
 use regex::Regex;
 
-use gtk::{ prelude::* };
-use gtk::{ Application, ApplicationWindow, DrawingArea };
-use gtk::{ Menu, MenuItem, CheckMenuItem,  SeparatorMenuItem };
-use gtk::{ AboutDialog, /* Dialog, DialogFlags, ResponseType */ };
+use gtk::prelude::*;
+use gtk::{AboutDialog /* Dialog, DialogFlags, ResponseType */};
+use gtk::{Application, ApplicationWindow, DrawingArea};
+use gtk::{CheckMenuItem, Menu, MenuItem, SeparatorMenuItem};
 
-use gtk::cairo::{ Context, Rectangle, ImageSurface, Format, Region };
+use gtk::cairo::{Context, Format, ImageSurface, Rectangle, Region};
 // use gtk::cairo::{ FontSlant, FontWeight  };
 
 use gtk::gdk::prelude::GdkSurfaceExt;
@@ -41,7 +41,7 @@ use gtk::gdk_pixbuf::Pixbuf;
 
 use rsvg::SvgHandle;
 
-use chrono::{ DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike, Utc };
+use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike, Utc};
 
 use linked_hash_map::LinkedHashMap;
 
@@ -50,14 +50,14 @@ const ENV_KEY_FIX_TIME: &str = "FIX_TIME";
 
 const ENABLE_FILE_INCLUDE: bool = true;
 
-const INCLUDE_BYTES_LOGO_PNG: &'static [u8] = include_bytes!( "../logo.png" );
-const INCLUDE_BYTES_CLOCL_THEME_1_SVG: &'static [u8] = include_bytes!( "../clock_theme_1.svg" );
-const INCLUDE_BYTES_CLOCL_THEME_2_SVG: &'static [u8] = include_bytes!( "../clock_theme_2.svg" );
-const INCLUDE_BYTES_CLOCL_THEME_3_SVG: &'static [u8] = include_bytes!( "../clock_theme_3.svg" );
-const INCLUDE_BYTES_CLOCL_THEME_4_SVG: &'static [u8] = include_bytes!( "../clock_theme_4.svg" );
-const INCLUDE_BYTES_CLOCL_THEME_5_SVG: &'static [u8] = include_bytes!( "../clock_theme_5.svg" );
-const INCLUDE_BYTES_CLOCL_THEME_6_SVG: &'static [u8] = include_bytes!( "../clock_theme_6.svg" );
-const INCLUDE_BYTES_CLOCL_THEME_7_SVG: &'static [u8] = include_bytes!( "../clock_theme_7.svg" );
+const INCLUDE_BYTES_LOGO_PNG: &'static [u8] = include_bytes!("../logo.png");
+const INCLUDE_BYTES_CLOCL_THEME_1_SVG: &'static [u8] = include_bytes!("../clock_theme_1.svg");
+const INCLUDE_BYTES_CLOCL_THEME_2_SVG: &'static [u8] = include_bytes!("../clock_theme_2.svg");
+const INCLUDE_BYTES_CLOCL_THEME_3_SVG: &'static [u8] = include_bytes!("../clock_theme_3.svg");
+const INCLUDE_BYTES_CLOCL_THEME_4_SVG: &'static [u8] = include_bytes!("../clock_theme_4.svg");
+const INCLUDE_BYTES_CLOCL_THEME_5_SVG: &'static [u8] = include_bytes!("../clock_theme_5.svg");
+const INCLUDE_BYTES_CLOCL_THEME_6_SVG: &'static [u8] = include_bytes!("../clock_theme_6.svg");
+const INCLUDE_BYTES_CLOCL_THEME_7_SVG: &'static [u8] = include_bytes!("../clock_theme_7.svg");
 
 const FILE_LOGO_PNG: &str = "logo.png";
 const FILE_CLOCL_THEME_1_SVG: &str = "clock_theme_1.svg";
@@ -83,59 +83,75 @@ const AUTHOR_ZUNTAN: &str = "zuntan <jun_n@momo.so-net.ne.jp>";
 const ABOUT_TITLE: &str = GTK_APPLICATION_TITLE;
 const ABOUT_PROGRAM_NAME: &str = "svgclock";
 const ABOUT_COMMENTS: &str = "svgclock-rs is a clock, using svg image.";
-const ABOUT_COPYRIGHT_STR: LazyLock< String > = LazyLock::new(||{ format!( "Copyright © 2025 {}", AUTHOR_ZUNTAN  ) } );
-const ABOUT_VERSION_STR: LazyLock< String > = LazyLock::new(||{ format!( "Ver. {}", env!( "CARGO_PKG_VERSION" ) ) } );
+const ABOUT_COPYRIGHT_STR: LazyLock<String> =
+    LazyLock::new(|| format!("Copyright © 2025 {}", AUTHOR_ZUNTAN));
+const ABOUT_VERSION_STR: LazyLock<String> =
+    LazyLock::new(|| format!("Ver. {}", env!("CARGO_PKG_VERSION")));
 const ABOUT_WEBSITE: &str = "https://github.com/zuntan/svgclock-rs/";
-const ABOUT_AUTHORS: [&'static str; 1] = [ AUTHOR_ZUNTAN ];
-const ABOUT_ARTISTS: [&'static str; 1] = [ AUTHOR_ZUNTAN ];
+const ABOUT_AUTHORS: [&'static str; 1] = [AUTHOR_ZUNTAN];
+const ABOUT_ARTISTS: [&'static str; 1] = [AUTHOR_ZUNTAN];
 
 fn get_app_info_file() -> std::path::PathBuf
 {
     let mut ret = PathBuf::new();
 
-    if cfg!( not( debug_assertions )  )
+    if cfg!(not(debug_assertions))
     {
         // for release only
-        ret.push( glib::home_dir() );
+        ret.push(glib::home_dir());
     }
 
-    ret.push( FILE_APP_INFO );
+    ret.push(FILE_APP_INFO);
 
-    debug!("get_app_info_file:{:?}", ret );
+    debug!("get_app_info_file:{:?}", ret);
 
     ret
 }
 
-fn to_char( br: &BytesRef ) -> Option< char >
+fn to_char(br: &BytesRef) -> Option<char>
 {
-    if let Ok( x ) = br.resolve_char_ref() && let Some( x ) = x
+    if let Ok(x) = br.resolve_char_ref()
+        && let Some(x) = x
     {
-        return Some( x );
+        return Some(x);
     }
-    else if let Ok( x ) = br.xml_content()
+    else if let Ok(x) = br.xml_content()
     {
         match x.to_lowercase().as_str()
         {
-            "amp" => { return Some('&'); }
-        ,   "gt" => { return Some('>'); }
-        ,   "lt" => { return Some('<'); }
-        ,   "quot" => { return Some('"'); }
-        ,   "nbsp" => { return Some(' '); }
-        ,   _ => {}
+            "amp" =>
+            {
+                return Some('&');
+            },
+            "gt" =>
+            {
+                return Some('>');
+            },
+            "lt" =>
+            {
+                return Some('<');
+            },
+            "quot" =>
+            {
+                return Some('"');
+            },
+            "nbsp" =>
+            {
+                return Some(' ');
+            },
+            _ =>
+            {},
         }
     }
 
     None
 }
 
-fn parse_float_list(val: &str) -> Vec<f64> {
-
-    const RE_FLOAT: LazyLock<Regex> = LazyLock::new(
-        ||
-        {
-            Regex::new(r"[-+]?([0-9]*\.[0-9]+|[0-9]+\.?[0-9]*)([eE][-+]?[0-9]+)?").unwrap()
-        }
-    );
+fn parse_float_list(val: &str) -> Vec<f64>
+{
+    const RE_FLOAT: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"[-+]?([0-9]*\.[0-9]+|[0-9]+\.?[0-9]*)([eE][-+]?[0-9]+)?").unwrap()
+    });
 
     let arg: Vec<f64> = RE_FLOAT
         .captures_iter(val)
@@ -147,64 +163,79 @@ fn parse_float_list(val: &str) -> Vec<f64> {
     arg
 }
 
-fn parse_svg_transform_value(transform: &str) -> Option<DAffine2> {
+fn parse_svg_transform_value(transform: &str) -> Option<DAffine2>
+{
+    const RE_TRANSLATE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^\)]+)\)").unwrap()
+    });
 
-    const RE_TRANSLATE: LazyLock< Regex > = LazyLock::new(
-        ||
-        {
-            Regex::new(r"(?i)(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^\)]+)\)").unwrap()
-        }
-    );
-
-    if String::from(transform).trim() == "" {
+    if String::from(transform).trim() == ""
+    {
         None
-    } else {
+    }
+    else
+    {
         let mut ret = DAffine2::IDENTITY;
 
-        for caps in RE_TRANSLATE.captures_iter(transform) {
+        for caps in RE_TRANSLATE.captures_iter(transform)
+        {
             let op = caps[1].to_lowercase();
 
             let arg: Vec<f64> = parse_float_list(&caps[2]);
 
-            let m = match op.as_str() {
-                "translate" if arg.len() == 2 => Some(DAffine2::from_translation(DVec2 {
-                    x: arg[0],
-                    y: arg[1],
-                })),
-                "scale" if arg.len() == 2 => Some(DAffine2::from_scale(DVec2 {
-                    x: arg[0],
-                    y: arg[1],
-                })),
+            let m = match op.as_str()
+            {
+                "translate" if arg.len() == 2 =>
+                {
+                    Some(DAffine2::from_translation(DVec2 {
+                        x: arg[0],
+                        y: arg[1],
+                    }))
+                },
+                "scale" if arg.len() == 2 =>
+                {
+                    Some(DAffine2::from_scale(DVec2 {
+                        x: arg[0],
+                        y: arg[1],
+                    }))
+                },
                 "rotate" if arg.len() == 1 => Some(DAffine2::from_angle(arg[0])),
-                "rotate" if arg.len() == 3 => Some(DAffine2::from_angle_translation(
-                    arg[0],
-                    DVec2 {
-                        x: arg[1],
-                        y: arg[2],
-                    },
-                )),
+                "rotate" if arg.len() == 3 =>
+                {
+                    Some(DAffine2::from_angle_translation(
+                        arg[0],
+                        DVec2 {
+                            x: arg[1],
+                            y: arg[2],
+                        },
+                    ))
+                },
                 "skewx" if arg.len() == 2 => None,
                 "skewy" if arg.len() == 2 => None,
-                "matrix" if arg.len() == 3 => Some(DAffine2::from_mat2_translation(
-                    DMat2 {
-                        x_axis: DVec2 {
-                            x: arg[0],
-                            y: arg[1],
+                "matrix" if arg.len() == 3 =>
+                {
+                    Some(DAffine2::from_mat2_translation(
+                        DMat2 {
+                            x_axis: DVec2 {
+                                x: arg[0],
+                                y: arg[1],
+                            },
+                            y_axis: DVec2 {
+                                x: arg[2],
+                                y: arg[3],
+                            },
                         },
-                        y_axis: DVec2 {
-                            x: arg[2],
-                            y: arg[3],
+                        DVec2 {
+                            x: arg[4],
+                            y: arg[5],
                         },
-                    },
-                    DVec2 {
-                        x: arg[4],
-                        y: arg[5],
-                    },
-                )),
+                    ))
+                },
                 _ => None,
             };
 
-            if let Some(m) = m {
+            if let Some(m) = m
+            {
                 ret *= m;
             }
         }
@@ -215,10 +246,8 @@ fn parse_svg_transform_value(transform: &str) -> Option<DAffine2> {
 
 type XmlInputReader<'a> = quick_xml::Reader<&'a [u8]>;
 
-fn parse_xml_sz_and_vbox(
-    src_buf: &[u8],
-) -> Result<(IVec2, DVec2, DVec2), Box< dyn Error > > {
-
+fn parse_xml_sz_and_vbox(src_buf: &[u8]) -> Result<(IVec2, DVec2, DVec2), Box<dyn Error>>
+{
     const TARGET_TAG: &[u8] = "svg".as_bytes();
 
     const TARGET_ATTR_KEY_WIDTH: &[u8] = "width".as_bytes();
@@ -231,13 +260,17 @@ fn parse_xml_sz_and_vbox(
 
     let mut r_src = XmlInputReader::from_reader(&src_buf);
 
-    loop {
+    loop
+    {
         let event = r_src.read_event();
 
-        match event {
+        match event
+        {
             Ok(quick_xml::events::Event::Eof) => break,
-            Ok(quick_xml::events::Event::Start(ref tag)) => {
-                if tag.name().as_ref() == TARGET_TAG {
+            Ok(quick_xml::events::Event::Start(ref tag)) =>
+            {
+                if tag.name().as_ref() == TARGET_TAG
+                {
                     if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_WIDTH)
                         && let Some(attr) = attr
                     {
@@ -264,15 +297,18 @@ fn parse_xml_sz_and_vbox(
                         let arg: Vec<f64> =
                             parse_float_list(std::str::from_utf8(attr.value.as_ref()).unwrap());
 
-                        if arg.len() == 4 {
+                        if arg.len() == 4
+                        {
                             viewbox_xy = DVec2::new(arg[0], arg[1]);
                             viewbox_sz = DVec2::new(arg[2], arg[3]);
 
-                            if sz.x == 0 {
+                            if sz.x == 0
+                            {
                                 sz.x = viewbox_sz.x as i32;
                             }
 
-                            if sz.y == 0 {
+                            if sz.y == 0
+                            {
                                 sz.y = viewbox_sz.y as i32;
                             }
                         }
@@ -280,64 +316,80 @@ fn parse_xml_sz_and_vbox(
 
                     break;
                 }
-            }
-            _ => {}
+            },
+            _ =>
+            {},
         }
     }
 
     Ok((sz, viewbox_xy, viewbox_sz))
 }
 
-fn parse_xml_config(
-    src_buf: &[u8],
-) -> Result<ImageInfoConfig, Box< dyn Error > > {
-
-    fn func_get_text( r_src: &mut XmlInputReader ) -> Result< String, Box< dyn Error > >
+fn parse_xml_config(src_buf: &[u8]) -> Result<ImageInfoConfig, Box<dyn Error>>
+{
+    fn func_get_text(r_src: &mut XmlInputReader) -> Result<String, Box<dyn Error>>
     {
         const TARGET_TAG_TSPAN: &[u8] = "tspan".as_bytes();
 
         let mut text = String::new();
 
-        loop {
+        loop
+        {
             let event = r_src.read_event();
 
-            match event {
+            match event
+            {
                 Ok(quick_xml::events::Event::Eof) => break,
-                Ok(quick_xml::events::Event::End( tag )) => {
+                Ok(quick_xml::events::Event::End(tag)) =>
+                {
                     if tag.name().as_ref() == TARGET_TAG_TSPAN
                     {
                         text += "\n";
                         break;
                     }
-                }
-                Ok(quick_xml::events::Event::Start(ref tag)) => {
+                },
+                Ok(quick_xml::events::Event::Start(ref tag)) =>
+                {
                     if tag.name().as_ref() == TARGET_TAG_TSPAN
                     {
-                        match func_get_text( r_src )
+                        match func_get_text(r_src)
                         {
-                            Ok( x ) => { text += &x; },
-                            Err( x ) => { return Err( x ); }
+                            Ok(x) =>
+                            {
+                                text += &x;
+                            },
+                            Err(x) =>
+                            {
+                                return Err(x);
+                            },
                         }
                     }
                 },
-                Ok(quick_xml::events::Event::Text( inner)) => {
-                    text += std::str::from_utf8( inner.as_ref() ).unwrap();
+                Ok(quick_xml::events::Event::Text(inner)) =>
+                {
+                    text += std::str::from_utf8(inner.as_ref()).unwrap();
                 },
-                Ok(quick_xml::events::Event::CData( inner)) => {
-                    text += std::str::from_utf8( inner.as_ref() ).unwrap();
+                Ok(quick_xml::events::Event::CData(inner)) =>
+                {
+                    text += std::str::from_utf8(inner.as_ref()).unwrap();
                 },
-                Ok(quick_xml::events::Event::GeneralRef( inner)) => {
-                    if let Some( x ) = to_char( &inner )
+                Ok(quick_xml::events::Event::GeneralRef(inner)) =>
+                {
+                    if let Some(x) = to_char(&inner)
                     {
-                        text.push(  x );
+                        text.push(x);
                     }
                 },
-                Err( x ) => { return Err( Box::new( x ) ); }
-                _ => {}
+                Err(x) =>
+                {
+                    return Err(Box::new(x));
+                },
+                _ =>
+                {},
             }
         }
 
-        Ok( text )
+        Ok(text)
     }
 
     let target_tag = "text".as_bytes();
@@ -346,48 +398,54 @@ fn parse_xml_config(
 
     let mut r_src = XmlInputReader::from_reader(&src_buf);
 
-    loop {
+    loop
+    {
         let event = r_src.read_event();
 
-        match event {
+        match event
+        {
             Ok(quick_xml::events::Event::Eof) => break,
-            Ok(quick_xml::events::Event::Start(ref tag)) => {
+            Ok(quick_xml::events::Event::Start(ref tag)) =>
+            {
                 if tag.name().as_ref() == target_tag
                 {
-                    match func_get_text( &mut r_src )
+                    match func_get_text(&mut r_src)
                     {
-                        Ok( x ) => { text += &x; },
-                        Err( x ) => { return Err( x ); }
+                        Ok(x) =>
+                        {
+                            text += &x;
+                        },
+                        Err(x) =>
+                        {
+                            return Err(x);
+                        },
                     }
                     break;
                 }
             },
-            _ => {}
+            _ =>
+            {},
         }
     }
 
-    debug!( "config text : {:?}",  text );
+    debug!("config text : {:?}", text);
 
-    let ret: ImageInfoConfig =
-        match toml::from_str( &text )
+    let ret: ImageInfoConfig = match toml::from_str(&text)
+    {
+        Ok(x) => x,
+        Err(x) =>
         {
-            Ok( x ) =>
-            {
-                x
-            }
-        ,   Err( x ) =>
-            {
-                error!( "config error. {:?}", x );
-                ImageInfoConfig::new()
-            }
-        }
-        ;
+            error!("config error. {:?}", x);
+            ImageInfoConfig::new()
+        },
+    };
 
-    Ok( ret )
+    Ok(ret)
 }
 
 #[derive(Debug, strum::EnumString, strum::Display)]
-enum LayerTarget {
+enum LayerTarget
+{
     #[strum(to_string = "base")]
     Base,
     #[strum(to_string = "base_text")]
@@ -407,15 +465,11 @@ enum LayerTarget {
     #[strum(to_string = "sub_second_center_circle")]
     SubSecondCenterCircle,
     #[strum(to_string = "config")]
-    Config
+    Config,
 }
 
-fn parse_xml_center(
-    src_buf: &[u8],
-    target: LayerTarget
-)
--> Result< DVec2, Box< dyn Error > > {
-
+fn parse_xml_center(src_buf: &[u8], target: LayerTarget) -> Result<DVec2, Box<dyn Error>>
+{
     const TARGET_ATTR_KEY_TRANSFORM: &[u8] = "transform".as_bytes();
 
     const TARGET_TAG: &[u8] = "g".as_bytes();
@@ -438,9 +492,11 @@ fn parse_xml_center(
         if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_TRANSFORM)
             && let Some(attr) = attr
         {
-            if let Ok(attr_transform) = std::str::from_utf8(attr.value.as_ref()) {
+            if let Ok(attr_transform) = std::str::from_utf8(attr.value.as_ref())
+            {
                 // debug!("attr_translate:{:?}", attr_transform);
-                if let Some(x) = parse_svg_transform_value(attr_transform) {
+                if let Some(x) = parse_svg_transform_value(attr_transform)
+                {
                     return x;
                 }
             }
@@ -451,106 +507,113 @@ fn parse_xml_center(
 
     let mut r_src = XmlInputReader::from_reader(&src_buf);
 
-    loop {
+    loop
+    {
         let event = r_src.read_event();
 
-        match event {
+        match event
+        {
             Ok(quick_xml::events::Event::Eof) => break,
-            Ok(evt) => match evt {
-                quick_xml::events::Event::Start(ref tag) => {
-                    translate_affines.push(get_transform_affine(tag));
-
-                    // check <g>
-
-                    if translate_affines.len() == 2
-                        && tag.name().as_ref() == TARGET_TAG
+            Ok(evt) =>
+            {
+                match evt
+                {
+                    quick_xml::events::Event::Start(ref tag) =>
                     {
-                        target_layer = false;
+                        translate_affines.push(get_transform_affine(tag));
 
-                        if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_GROUPMODE)
-                            && let Some(attr) = attr
+                        // check <g>
+
+                        if translate_affines.len() == 2 && tag.name().as_ref() == TARGET_TAG
                         {
-                            if attr.value.as_ref() == TARGET_ATTR_VAL_GROUPMODE
+                            target_layer = false;
+
+                            if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_GROUPMODE)
+                                && let Some(attr) = attr
                             {
-                                if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_LABEL)
-                                    && let Some(attr) = attr
+                                if attr.value.as_ref() == TARGET_ATTR_VAL_GROUPMODE
                                 {
-                                    if attr.value.as_ref() == target.to_string().as_bytes()
+                                    if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_LABEL)
+                                        && let Some(attr) = attr
                                     {
-                                        target_layer = true;
+                                        if attr.value.as_ref() == target.to_string().as_bytes()
+                                        {
+                                            target_layer = true;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                }
-                quick_xml::events::Event::Empty(ref tag) => {
-                    /*
-                    debug!("target_layer: {:?} ", target_layer);
-                    debug!("depth: {:?} ", translate_affines.len());
-                    debug!("tag: {:?} ", tag);
-                    */
-
-                    if target_layer
-                        && translate_affines.len() == 2
-                        && (
-                                tag.name().as_ref() == TARGET_TAG_ELLIPSE
-                            ||  tag.name().as_ref() == TARGET_TAG_CIRCLE
-                        )
+                    },
+                    quick_xml::events::Event::Empty(ref tag) =>
                     {
-                        let mut tran_affine = DAffine2::IDENTITY;
-                        // debug!("tran_affine A: {:?}", tran_affine);
+                        /*
+                        debug!("target_layer: {:?} ", target_layer);
+                        debug!("depth: {:?} ", translate_affines.len());
+                        debug!("tag: {:?} ", tag);
+                        */
 
-                        for x in &translate_affines {
-                            tran_affine *= x;
-                            // debug!("tran_affine B: {:?}", tran_affine);
-                        }
-
-                        tran_affine *= get_transform_affine(tag);
-                        //debug!("tran_affine C: {:?}", tran_affine);
-
-                        let mut vec2 = DVec2 { x: 0.0, y: 0.0 };
-
-                        if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_CX)
-                            && let Some(attr) = attr
+                        if target_layer
+                            && translate_affines.len() == 2
+                            && (tag.name().as_ref() == TARGET_TAG_ELLIPSE
+                                || tag.name().as_ref() == TARGET_TAG_CIRCLE)
                         {
-                            if let Ok(num) =
-                                f64::from_str(std::str::from_utf8(attr.value.as_ref()).unwrap())
-                            {
-                                vec2.x = num;
-                            }
-                        }
+                            let mut tran_affine = DAffine2::IDENTITY;
+                            // debug!("tran_affine A: {:?}", tran_affine);
 
-                        if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_CY)
-                            && let Some(attr) = attr
-                        {
-                            if let Ok(num) =
-                                f64::from_str(std::str::from_utf8(attr.value.as_ref()).unwrap())
+                            for x in &translate_affines
                             {
-                                vec2.y = num;
+                                tran_affine *= x;
+                                // debug!("tran_affine B: {:?}", tran_affine);
                             }
-                        }
 
-                        ret = tran_affine.transform_point2(vec2);
-                        // debug!("ret: {:?}", ret);
-                    }
+                            tran_affine *= get_transform_affine(tag);
+                            //debug!("tran_affine C: {:?}", tran_affine);
+
+                            let mut vec2 = DVec2 {
+                                x: 0.0, y: 0.0
+                            };
+
+                            if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_CX)
+                                && let Some(attr) = attr
+                            {
+                                if let Ok(num) =
+                                    f64::from_str(std::str::from_utf8(attr.value.as_ref()).unwrap())
+                                {
+                                    vec2.x = num;
+                                }
+                            }
+
+                            if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_CY)
+                                && let Some(attr) = attr
+                            {
+                                if let Ok(num) =
+                                    f64::from_str(std::str::from_utf8(attr.value.as_ref()).unwrap())
+                                {
+                                    vec2.y = num;
+                                }
+                            }
+
+                            ret = tran_affine.transform_point2(vec2);
+                            // debug!("ret: {:?}", ret);
+                        }
+                    },
+                    quick_xml::events::Event::End(ref _tag) =>
+                    {
+                        translate_affines.pop();
+                    },
+                    _ =>
+                    {},
                 }
-                quick_xml::events::Event::End(ref _tag) => {
-                    translate_affines.pop();
-                }
-                _ => {}
             },
-            Err( e) => { return Err( Box::new( e ) ) },
+            Err(e) => return Err(Box::new(e)),
         }
     }
 
     Ok(ret)
 }
 
-fn filter_xml(
-    src_buf: &[u8],
-    target: LayerTarget,
-) -> Result< Option< Vec<u8> >, Box< dyn Error > >
+fn filter_xml(src_buf: &[u8], target: LayerTarget) -> Result<Option<Vec<u8>>, Box<dyn Error>>
 {
     const TARGET_TAG: &[u8] = "g".as_bytes();
     const TARGET_ATTR_KEY_GROUPMODE: &[u8] = "inkscape:groupmode".as_bytes();
@@ -566,93 +629,109 @@ fn filter_xml(
 
     let mut r_src = XmlInputReader::from_reader(&src_buf);
 
-    loop {
+    loop
+    {
         let event = r_src.read_event();
 
-        match event {
+        match event
+        {
             Ok(quick_xml::events::Event::Eof) => break,
 
-            Ok(evt) => match evt {
-                quick_xml::events::Event::Start(ref tag) => {
-                    depth += 1;
+            Ok(evt) =>
+            {
+                match evt
+                {
+                    quick_xml::events::Event::Start(ref tag) =>
+                    {
+                        depth += 1;
 
-                    if depth == 2 && tag.name().as_ref() == TARGET_TAG {
-                        let mut output = false;
-
-                        if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_GROUPMODE)
-                            && let Some(attr) = attr
+                        if depth == 2 && tag.name().as_ref() == TARGET_TAG
                         {
-                            if attr.value.as_ref() == TARGET_ATTR_VAL_GROUPMODE
+                            let mut output = false;
+
+                            if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_GROUPMODE)
+                                && let Some(attr) = attr
                             {
-                                if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_LABEL)
-                                    && let Some(attr) = attr
+                                if attr.value.as_ref() == TARGET_ATTR_VAL_GROUPMODE
                                 {
-                                    if attr.value.as_ref() == target.to_string().as_bytes() {
-                                        output = true;
-                                        found |= true;
+                                    if let Ok(attr) = tag.try_get_attribute(TARGET_ATTR_KEY_LABEL)
+                                        && let Some(attr) = attr
+                                    {
+                                        if attr.value.as_ref() == target.to_string().as_bytes()
+                                        {
+                                            output = true;
+                                            found |= true;
+                                        }
                                     }
                                 }
                             }
+
+                            depth_dis_output = if output { -1 } else { depth };
                         }
 
-                        depth_dis_output = if output { -1 } else { depth };
-                    }
+                        if depth_dis_output == -1
+                        {
+                            assert!(writer.write_event(evt).is_ok())
+                        }
+                    },
+                    quick_xml::events::Event::End(ref _tag) =>
+                    {
+                        if depth_dis_output == -1
+                        {
+                            assert!(writer.write_event(evt).is_ok())
+                        }
+                        else if depth == depth_dis_output
+                        {
+                            depth_dis_output = -1;
+                        }
 
-                    if depth_dis_output == -1 {
-                        assert!(writer.write_event(evt).is_ok())
-                    }
-                }
-                quick_xml::events::Event::End(ref _tag) => {
-                    if depth_dis_output == -1 {
-                        assert!(writer.write_event(evt).is_ok())
-                    } else if depth == depth_dis_output {
-                        depth_dis_output = -1;
-                    }
-
-                    depth -= 1;
-                }
-                _ => {
-                    if depth_dis_output == -1 {
-                        assert!(writer.write_event(evt.borrow()).is_ok())
-                    }
+                        depth -= 1;
+                    },
+                    _ =>
+                    {
+                        if depth_dis_output == -1
+                        {
+                            assert!(writer.write_event(evt.borrow()).is_ok())
+                        }
+                    },
                 }
             },
 
-            Err( e) => { return Err( Box::new( e ) ) },
+            Err(e) => return Err(Box::new(e)),
         }
     }
 
     if found
     {
         let inner_buf = writer.into_inner().into_inner();
-        Ok( Some( inner_buf ) )
+        Ok(Some(inner_buf))
     }
     else
     {
-        Ok( None )
+        Ok(None)
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ImageInfoConfig
 {
-    theme_name: Option< String >,
-    theme_description: Option< String >,
-    with_text_time_zone: Option< bool >,
-    with_text_date: Option< bool >,
-    with_text_time: Option< bool >,
-    with_text_segment: Option< bool >,
-    enable_rotate_center_circle: Option< bool >,
-    enable_update_region_every_time: Option< bool >,
+    theme_name: Option<String>,
+    theme_description: Option<String>,
+    with_text_time_zone: Option<bool>,
+    with_text_date: Option<bool>,
+    with_text_time: Option<bool>,
+    with_text_segment: Option<bool>,
+    enable_rotate_center_circle: Option<bool>,
+    enable_update_region_every_time: Option<bool>,
 }
 
 impl ImageInfoConfig
 {
-    fn get_theme_name( &self ) -> Option< String >
+    fn get_theme_name(&self) -> Option<String>
     {
         let mut ret = self.theme_name.clone();
 
-        if let Some( x ) = &ret
+        if let Some(x) = &ret
         {
             if x == ""
             {
@@ -663,11 +742,11 @@ impl ImageInfoConfig
         ret
     }
 
-    fn get_theme_description( &self ) -> Option< String >
+    fn get_theme_description(&self) -> Option<String>
     {
         let mut ret = self.theme_description.clone();
 
-        if let Some( x ) = &ret
+        if let Some(x) = &ret
         {
             if x == ""
             {
@@ -683,110 +762,112 @@ impl ImageInfoConfig
 {
     const fn new() -> Self
     {
-        Self
-        {
+        Self {
             theme_name: None,
             theme_description: None,
-            with_text_time_zone: None, // = false
-            with_text_date: None, // = false
-            with_text_time: None, // = false
-            with_text_segment: None, // = false
-            enable_rotate_center_circle: None, // = false
+            with_text_time_zone: None,             // = false
+            with_text_date: None,                  // = false
+            with_text_time: None,                  // = false
+            with_text_segment: None,               // = false
+            enable_rotate_center_circle: None,     // = false
             enable_update_region_every_time: None, // = false
         }
     }
 
-    fn update_default( &mut self )
+    fn update_default(&mut self)
     {
         if self.with_text_time_zone.is_none()
         {
-            self.with_text_time_zone = Some( false );
+            self.with_text_time_zone = Some(false);
         }
 
         if self.with_text_date.is_none()
         {
-            self.with_text_date = Some( false );
+            self.with_text_date = Some(false);
         }
 
         if self.with_text_time.is_none()
         {
-            self.with_text_time = Some( false );
+            self.with_text_time = Some(false);
         }
 
         if self.with_text_segment.is_none()
         {
-            self.with_text_segment = Some( false );
+            self.with_text_segment = Some(false);
         }
 
         if self.enable_rotate_center_circle.is_none()
         {
-            self.enable_rotate_center_circle = Some( false );
+            self.enable_rotate_center_circle = Some(false);
         }
 
         if self.enable_update_region_every_time.is_none()
         {
-            self.enable_update_region_every_time = Some( false );
+            self.enable_update_region_every_time = Some(false);
         }
     }
 }
 
-struct ImageInfo {
-    sz: IVec2,
+struct ImageInfo
+{
+    sz:         IVec2,
     viewbox_xy: DVec2,
     viewbox_sz: DVec2,
 
-    bytes_base: Option<Vec<u8>>,
-    bytes_base_text: Option<Vec<u8>>,
-    bytes_long_handle: Option<Vec<u8>>,
-    bytes_short_handle: Option<Vec<u8>>,
-    bytes_second_handle: Option<Vec<u8>>,
-    bytes_center_circle: Option<Vec<u8>>,
-    bytes_sub_second_base: Option<Vec<u8>>,
-    bytes_sub_second_handle: Option<Vec<u8>>,
+    bytes_base:                     Option<Vec<u8>>,
+    bytes_base_text:                Option<Vec<u8>>,
+    bytes_long_handle:              Option<Vec<u8>>,
+    bytes_short_handle:             Option<Vec<u8>>,
+    bytes_second_handle:            Option<Vec<u8>>,
+    bytes_center_circle:            Option<Vec<u8>>,
+    bytes_sub_second_base:          Option<Vec<u8>>,
+    bytes_sub_second_handle:        Option<Vec<u8>>,
     bytes_sub_second_center_circle: Option<Vec<u8>>,
 
-    svgh_base: Option<SvgHandle>,
-    svgh_long_handle: Option<SvgHandle>,
-    svgh_short_handle: Option<SvgHandle>,
-    svgh_second_handle: Option<SvgHandle>,
-    svgh_center_circle: Option<SvgHandle>,
-    svgh_sub_second_base: Option<SvgHandle>,
-    svgh_sub_second_handle: Option<SvgHandle>,
+    svgh_base:                     Option<SvgHandle>,
+    svgh_long_handle:              Option<SvgHandle>,
+    svgh_short_handle:             Option<SvgHandle>,
+    svgh_second_handle:            Option<SvgHandle>,
+    svgh_center_circle:            Option<SvgHandle>,
+    svgh_sub_second_base:          Option<SvgHandle>,
+    svgh_sub_second_handle:        Option<SvgHandle>,
     svgh_sub_second_center_circle: Option<SvgHandle>,
 
-    center: DVec2,
+    center:            DVec2,
     center_sub_second: DVec2,
 
-    config: ImageInfoConfig
+    config: ImageInfoConfig,
 }
 
-impl ImageInfo {
-    const fn new() -> Self {
+impl ImageInfo
+{
+    const fn new() -> Self
+    {
         Self {
-            sz: IVec2::ZERO,
+            sz:         IVec2::ZERO,
             viewbox_xy: DVec2::ZERO,
             viewbox_sz: DVec2::ZERO,
 
-            bytes_base: None,
-            bytes_base_text: None,
-            bytes_long_handle: None,
-            bytes_short_handle: None,
-            bytes_second_handle: None,
-            bytes_center_circle: None,
-            bytes_sub_second_base: None,
-            bytes_sub_second_handle: None,
+            bytes_base:                     None,
+            bytes_base_text:                None,
+            bytes_long_handle:              None,
+            bytes_short_handle:             None,
+            bytes_second_handle:            None,
+            bytes_center_circle:            None,
+            bytes_sub_second_base:          None,
+            bytes_sub_second_handle:        None,
             bytes_sub_second_center_circle: None,
 
-            svgh_base: None,
-            svgh_long_handle: None,
-            svgh_short_handle: None,
-            svgh_second_handle: None,
-            svgh_center_circle: None,
-            svgh_sub_second_base: None,
-            svgh_sub_second_handle: None,
+            svgh_base:                     None,
+            svgh_long_handle:              None,
+            svgh_short_handle:             None,
+            svgh_second_handle:            None,
+            svgh_center_circle:            None,
+            svgh_sub_second_base:          None,
+            svgh_sub_second_handle:        None,
             svgh_sub_second_center_circle: None,
 
-            center: DVec2::ZERO,
+            center:            DVec2::ZERO,
             center_sub_second: DVec2::ZERO,
 
             config: ImageInfoConfig::new(),
@@ -794,494 +875,26 @@ impl ImageInfo {
     }
 }
 
-fn load_theme( theme: AppInfoTheme, theme_custom: Option< String > ) -> Option< ImageInfo >
+fn load_theme(theme: AppInfoTheme, theme_custom: Option<String>) -> Option<ImageInfo>
 {
-    let src_buf: Option< Vec<u8> > =
-        match theme
+    let src_buf: Option<Vec<u8>> = match theme
+    {
+        AppInfoTheme::Custom =>
         {
-            AppInfoTheme::Custom =>
+            if let Some(theme_custom) = theme_custom
             {
-                if let Some( theme_custom ) = theme_custom
-                {
-                    let mut src_buf = Vec::<u8>::new();
+                let mut src_buf = Vec::<u8>::new();
 
-                    if let Ok( mut src ) = File::open(theme_custom )
+                if let Ok(mut src) = File::open(theme_custom)
+                {
+                    if let Ok(_) = src.read_to_end(&mut src_buf)
                     {
-                        if let Ok(_) = src.read_to_end( &mut src_buf )
-                        {
-                            Some( src_buf )
-                        }
-                        else { None }
+                        Some(src_buf)
                     }
-                    else { None }
-                }
-                else { None }
-            }
-            _ =>
-            {
-                let tmp_src_buf: Option< Vec<u8> > =
-                    if ENABLE_FILE_INCLUDE
+                    else
                     {
-                        match theme
-                        {
-                            AppInfoTheme::Theme1 =>
-                            {
-                                Some( INCLUDE_BYTES_CLOCL_THEME_1_SVG.to_vec() )
-                            }
-                        ,   AppInfoTheme::Theme2 =>
-                            {
-                                Some( INCLUDE_BYTES_CLOCL_THEME_2_SVG.to_vec() )
-                            }
-                        ,   AppInfoTheme::Theme3 =>
-                            {
-                                Some( INCLUDE_BYTES_CLOCL_THEME_3_SVG.to_vec() )
-                            }
-                        ,   AppInfoTheme::Theme4 =>
-                            {
-                                Some( INCLUDE_BYTES_CLOCL_THEME_4_SVG.to_vec() )
-                            }
-                        ,   AppInfoTheme::Theme5 =>
-                            {
-                                Some( INCLUDE_BYTES_CLOCL_THEME_5_SVG.to_vec() )
-                            }
-                        ,   AppInfoTheme::Theme6 =>
-                            {
-                                Some( INCLUDE_BYTES_CLOCL_THEME_6_SVG.to_vec() )
-                            }
-                        ,   AppInfoTheme::Theme7 =>
-                            {
-                                Some( INCLUDE_BYTES_CLOCL_THEME_7_SVG.to_vec() )
-                            }
-                        ,   _ => { None }
-                        }
+                        None
                     }
-                    else { None }
-                    ;
-
-                if tmp_src_buf.is_some()
-                {
-                    tmp_src_buf
-                }
-                else
-                {
-                    /* load from file */
-                    let source =
-                        match theme
-                        {
-                            AppInfoTheme::Theme1 => FILE_CLOCL_THEME_1_SVG
-                        ,   AppInfoTheme::Theme2 => FILE_CLOCL_THEME_2_SVG
-                        ,   AppInfoTheme::Theme3 => FILE_CLOCL_THEME_3_SVG
-                        ,   AppInfoTheme::Theme4 => FILE_CLOCL_THEME_4_SVG
-                        ,   AppInfoTheme::Theme5 => FILE_CLOCL_THEME_5_SVG
-                        ,   AppInfoTheme::Theme6 => FILE_CLOCL_THEME_6_SVG
-                        ,   AppInfoTheme::Theme7 => FILE_CLOCL_THEME_7_SVG
-                        ,   _ => ""
-                        };
-
-                    let mut src_buf = Vec::<u8>::new();
-
-                    if let Ok( mut src ) = File::open( source )
-                    {
-                        if let Ok(_) = src.read_to_end( &mut src_buf )
-                        {
-                            Some( src_buf )
-                        }
-                        else { None }
-                    }
-                    else { None }
-                }
-            }
-        }
-        ;
-
-    if let Some( src_buf ) = src_buf
-    {
-        Some( load_xml( &src_buf) )
-    }
-    else
-    {
-        None
-    }
-}
-
-fn load_xml( src_buf: &Vec<u8> ) -> ImageInfo
-{
-    let src_base = filter_xml( src_buf,LayerTarget::Base );
-    let src_base_text = filter_xml( src_buf,LayerTarget::BaseText );
-    let src_long_handle = filter_xml( src_buf,LayerTarget::LongHandle );
-    let src_short_handle = filter_xml( src_buf, LayerTarget::ShortHandle );
-    let src_second_handle = filter_xml( src_buf, LayerTarget::SecondHandle );
-    let src_center_circle = filter_xml( src_buf,LayerTarget::CenterCircle );
-    let src_sub_second_base = filter_xml( src_buf,LayerTarget::SubSecondBase );
-    let src_sub_second_handle = filter_xml( src_buf,LayerTarget::SubSecondHandle );
-    let src_sub_second_center_circle = filter_xml( src_buf,LayerTarget::SubSecondCenterCircle );
-    let src_config = filter_xml( src_buf,LayerTarget::Config );
-
-    let fn_make_svg_handle = | src_xml : &Vec<u8> |
-    {
-        let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( src_xml ));
-
-        Some(
-            rsvg::Loader::new()
-            .read_stream(
-                &svg_stream,
-                None::<&gtk::gio::File>,
-                None::<&gtk::gio::Cancellable>,
-            )
-            .unwrap()
-        )
-    };
-
-    let mut ret = ImageInfo::new();
-
-    if let Ok( Some( src_xml )  ) = src_config
-    {
-        if let Ok( config ) = parse_xml_config( &src_xml )
-        {
-            debug!( "config load   {:?}", config );
-
-            let mut config = config;
-            config.update_default();
-
-            debug!( "config update {:?}", config );
-
-            ret.config = config;
-        }
-    }
-
-    if let Ok( Some( src_xml ) ) = src_base
-    {
-        if let Ok(result) = parse_xml_sz_and_vbox(&src_xml ) {
-            ret.sz = result.0;
-            ret.viewbox_xy = result.1;
-            ret.viewbox_sz = result.2;
-        }
-
-        ret.svgh_base = fn_make_svg_handle( &src_xml );
-        ret.bytes_base = Some(src_xml);
-    }
-
-    if let Ok( Some( src_xml ) ) = src_base_text {
-        ret.bytes_base_text = Some(src_xml);
-    }
-
-    if let Ok( Some( src_xml ) ) = src_long_handle {
-        ret.svgh_long_handle = fn_make_svg_handle( &src_xml );
-        ret.bytes_long_handle = Some(src_xml);
-    }
-
-    if let Ok( Some( src_xml) ) = src_short_handle {
-        ret.svgh_short_handle = fn_make_svg_handle( &src_xml );
-        ret.bytes_short_handle = Some(src_xml);
-    }
-
-    if let Ok( Some( src_xml) ) = src_second_handle {
-        ret.svgh_second_handle = fn_make_svg_handle( &src_xml );
-        ret.bytes_second_handle = Some(src_xml);
-    }
-
-    if let Ok( Some( src_xml) ) = src_center_circle {
-
-        if let Ok(center) = parse_xml_center(&src_xml,LayerTarget::CenterCircle ) {
-            ret.center = center;
-        }
-
-        debug!("ret.center: {:?}", ret.center);
-
-        ret.svgh_center_circle = fn_make_svg_handle( &src_xml );
-        ret.bytes_center_circle = Some(src_xml);
-    }
-
-    if let Ok( Some( src_xml) ) = src_sub_second_base {
-        ret.svgh_sub_second_base = fn_make_svg_handle( &src_xml );
-        ret.bytes_sub_second_base = Some(src_xml);
-    }
-
-    if let Ok( Some( src_xml) ) = src_sub_second_handle {
-        ret.svgh_sub_second_handle = fn_make_svg_handle( &src_xml );
-        ret.bytes_sub_second_handle = Some(src_xml);
-    }
-
-    if let Ok( Some( src_xml) ) = src_sub_second_center_circle {
-
-        if let Ok(center) = parse_xml_center(&src_xml,LayerTarget::SubSecondCenterCircle ) {
-            ret.center_sub_second = center;
-        }
-
-        debug!("ret.center: {:?}", ret.center);
-
-        ret.svgh_sub_second_center_circle = fn_make_svg_handle( &src_xml );
-        ret.bytes_sub_second_center_circle = Some(src_xml);
-    }
-
-    ret
-}
-
-fn load_logo() -> Option< Pixbuf >
-{
-    if ENABLE_FILE_INCLUDE
-    {
-        let mut src_buf = &INCLUDE_BYTES_LOGO_PNG[..];
-        let surface = ImageSurface::create_from_png(  &mut src_buf ).unwrap();
-        return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
-    }
-    else
-    {
-        // load logo
-        let mut src_buf = Vec::<u8>::new();
-
-        let mut src = File::open(FILE_LOGO_PNG ).unwrap();
-        src.read_to_end(&mut src_buf).unwrap();
-
-        if FILE_LOGO_PNG.ends_with( ".svg" )
-        {
-            if let Ok(result) = parse_xml_sz_and_vbox(&src_buf)
-            {
-
-                let sz = result.0;
-                let surface = ImageSurface::create(Format::ARgb32, sz.x, sz.y ).unwrap();
-
-                {
-                    let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &src_buf ));
-
-                    let svg_handle =
-                        rsvg::Loader::new()
-                        .read_stream(
-                            &svg_stream,
-                            None::<&gtk::gio::File>,
-                            None::<&gtk::gio::Cancellable>,
-                        )
-                        .unwrap()
-                        ;
-
-                    let cctx = Context::new( &surface ).unwrap();
-                    let viewport = Rectangle::new(0.0, 0.0, sz.x as f64, sz.y as f64);
-
-                    let svg_renderer = rsvg::CairoRenderer::new( &svg_handle );
-                    svg_renderer.render_document( &cctx, &viewport ).unwrap();
-                }
-
-                return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
-            }
-        }
-        else if FILE_LOGO_PNG.ends_with( ".png" )
-        {
-            let mut src_buf = &src_buf[..];  // with io.Read Trait
-
-            let surface = ImageSurface::create_from_png(  &mut src_buf ).unwrap();
-
-            return gdk::pixbuf_get_from_surface( &surface, 0, 0, surface.width(), surface.height() );
-        }
-    }
-
-    None
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
-enum AppInfoTheme
-{
-    Theme1
-,   Theme2
-,   Theme3
-,   Theme4
-,   Theme5
-,   Theme6
-,   Theme7
-,   Custom
-}
-
-#[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
-enum AppInfoFormatDate
-{
-    DtFmt1
-,   DtFmt2
-,   DtFmt3
-,   DtFmt4
-,   DtCustom
-}
-
-impl AppInfoFormatDate
-{
-    fn format_str( &self ) -> ( &str, &str )
-    {
-        // see https://docs.rs/chrono/latest/chrono/format/strftime/index.html
-
-        match self
-        {
-            Self::DtFmt1 =>
-                (
-                    "%F" /* Year-month-day format (ISO 8601). Same as %Y-%m-%d. */
-                ,   "Year-month-day (e.g., 2025-10-31)"
-                )
-        ,   Self::DtFmt2 =>
-                (
-                    "%Y/%m/%d" /* Year/month/day format. Same as %Y/%m/%d. */
-                ,   "Year/month/day (e.g., 2025/10/31)"
-                )
-        ,   Self::DtFmt3 =>
-                (
-                    "%D" /* Month/day/year format. Same as %m/%d/%y. */
-                ,   "Month/day/year (e.g., 10/31/25)"
-                )
-        ,   Self::DtFmt4 =>
-                (
-                    "%v" /* Day-month-year format. Same as %e-%b-%Y. */
-                ,   "Day-month-year (e.g., 31-Oct-2025)"
-                )
-        ,   _ => ( "", "Custom" )
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, strum::EnumString, strum::Display, strum::EnumIter, Copy, Clone, Serialize, Deserialize )]
-enum AppInfoFormatTime
-{
-    TmFmt1
-,   TmFmt2
-,   TmFmt3
-,   TmFmt4
-,   TmFmt5
-,   TmCustom
-}
-
-impl AppInfoFormatTime
-{
-    fn format_str( &self ) -> ( &str, &str )
-    {
-        // see https://docs.rs/chrono/latest/chrono/format/strftime/index.html
-
-        match self
-        {
-            Self::TmFmt1 =>
-                (
-                    "%r" /* Locale’s 12 hour clock time. (e.g., 11:11:04 PM). Falls back to %X if the locale does not have a 12 hour clock format. */
-                ,   "12 hour clock time with AM/PM (e.g., 11:11:04 PM)"
-                )
-        ,   Self::TmFmt2 =>
-                (
-                    "%I:%M:%S" /* Locale’s 12 hour clock time. (e.g., 11:11:04). Falls back to %X if the locale does not have a 12 hour clock format. */
-                ,   "12 hour clock time without AM/PM (e.g., 11:11:04)"
-                )
-        ,   Self::TmFmt3 =>
-                (
-                    "%T" /* Hour-minute-second format. Same as %H:%M:%S. */
-                ,   "Hour-minute-second (e.g., 23:11:04) "
-                )
-        ,   Self::TmFmt4 =>
-                (
-                    "%R" /* Hour-minute format. Same as %H:%M. */
-                ,   "Hour-minute (e.g., 23:11)"
-                )
-        ,   Self::TmFmt5 =>
-                (
-                    "%p"
-                ,   "AM/PM (e.g., AM)"
-                )
-        ,   _ => ( "", "Custom" )
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct AppInfo
-{
-    always_on_top: bool
-,   lock_pos: bool
-,   show_seconds: bool
-,   enable_sub_second_handle: bool
-,   enable_second_handle_smoothly: bool
-,   enable_text_time_zone: bool
-,   enable_text_date: bool
-,   enable_text_time: bool
-,   enable_text_time_segment: bool
-,   enable_text_time_segment_hour12: bool
-,   enable_text_time_segment_dotblink: bool
-,   text_format_date: AppInfoFormatDate
-,   text_format_date_custom: Option< String >
-,   text_format_time: AppInfoFormatTime
-,   text_format_time_custom: Option< String >
-,   time_zone: String
-,   theme: AppInfoTheme
-,   theme_custom: Option< String >
-,   zoom: u32
-,   window_pos: Option< ( i32, i32 ) >
-,   #[serde(skip)]
-    zoom_update: bool
-,   #[serde(skip)]
-    time_disp: NaiveDateTime
-,   #[serde(skip)]
-    time_disp_st: Option< ( NaiveDateTime, DateTime<Utc> ) >
-,   #[serde(skip)]
-    timer_sourceid: RefCell< Option< gtk::glib::SourceId > >
-,   #[serde(skip)]
-    time_disp_force: Option< NaiveTime >
-,   #[serde(skip)]
-    theme_names: HashMap< AppInfoTheme, ( Option< String >, Option< String > ) >
-}
-
-impl AppInfo
-{
-    fn new() -> Self {
-
-        Self
-        {
-            always_on_top: true
-        ,   lock_pos: false
-        ,   show_seconds: true
-        ,   enable_sub_second_handle: false
-        ,   enable_second_handle_smoothly: true
-        ,   enable_text_time_zone: true
-        ,   enable_text_date: true
-        ,   enable_text_time: true
-        ,   enable_text_time_segment: true
-        ,   enable_text_time_segment_hour12: false
-        ,   enable_text_time_segment_dotblink: true
-        ,   text_format_date: AppInfoFormatDate::DtFmt1
-        ,   text_format_date_custom: None
-        ,   text_format_time: AppInfoFormatTime::TmFmt1
-        ,   text_format_time_custom: None
-        ,   time_zone: String::new()
-        ,   theme: AppInfoTheme::Theme1
-        ,   theme_custom: None
-        ,   zoom: 100
-        ,   window_pos: None
-
-        ,   zoom_update: true
-        ,   time_disp: DateTime::UNIX_EPOCH.naive_utc()
-        ,   time_disp_st: None
-        ,   timer_sourceid: RefCell::new( None )
-        ,   time_disp_force: None
-        ,   theme_names: HashMap::new()
-        }
-    }
-
-    fn reset( &mut self )
-    {
-        self.zoom_update = true;
-        self.time_disp = Local::now().date_naive().and_hms_opt(0,0,0).unwrap();
-        self.time_disp_st = None;
-
-        self.theme_custom =
-            if let Ok( x ) = std::env::var( ENV_KEY_THEME_CUSTOM )
-            {
-                Some( x )
-            }
-            else
-            {
-                None
-            }
-            ;
-
-        self.time_disp_force =
-            if let Ok( x ) = std::env::var( ENV_KEY_FIX_TIME )
-            {
-                if let Ok( x ) = NaiveTime::parse_from_str( &x, "%H:%M:%S")
-                {
-                    Some( x )
-                }
-                else if let Ok( x ) = NaiveTime::parse_from_str( &x, "%H:%M")
-                {
-                    Some( x )
                 }
                 else
                 {
@@ -1292,93 +905,603 @@ impl AppInfo
             {
                 None
             }
-            ;
+        },
+        _ =>
+        {
+            let tmp_src_buf: Option<Vec<u8>> = if ENABLE_FILE_INCLUDE
+            {
+                match theme
+                {
+                    AppInfoTheme::Theme1 => Some(INCLUDE_BYTES_CLOCL_THEME_1_SVG.to_vec()),
+                    AppInfoTheme::Theme2 => Some(INCLUDE_BYTES_CLOCL_THEME_2_SVG.to_vec()),
+                    AppInfoTheme::Theme3 => Some(INCLUDE_BYTES_CLOCL_THEME_3_SVG.to_vec()),
+                    AppInfoTheme::Theme4 => Some(INCLUDE_BYTES_CLOCL_THEME_4_SVG.to_vec()),
+                    AppInfoTheme::Theme5 => Some(INCLUDE_BYTES_CLOCL_THEME_5_SVG.to_vec()),
+                    AppInfoTheme::Theme6 => Some(INCLUDE_BYTES_CLOCL_THEME_6_SVG.to_vec()),
+                    AppInfoTheme::Theme7 => Some(INCLUDE_BYTES_CLOCL_THEME_7_SVG.to_vec()),
+                    _ => None,
+                }
+            }
+            else
+            {
+                None
+            };
+
+            if tmp_src_buf.is_some()
+            {
+                tmp_src_buf
+            }
+            else
+            {
+                /* load from file */
+                let source = match theme
+                {
+                    AppInfoTheme::Theme1 => FILE_CLOCL_THEME_1_SVG,
+                    AppInfoTheme::Theme2 => FILE_CLOCL_THEME_2_SVG,
+                    AppInfoTheme::Theme3 => FILE_CLOCL_THEME_3_SVG,
+                    AppInfoTheme::Theme4 => FILE_CLOCL_THEME_4_SVG,
+                    AppInfoTheme::Theme5 => FILE_CLOCL_THEME_5_SVG,
+                    AppInfoTheme::Theme6 => FILE_CLOCL_THEME_6_SVG,
+                    AppInfoTheme::Theme7 => FILE_CLOCL_THEME_7_SVG,
+                    _ => "",
+                };
+
+                let mut src_buf = Vec::<u8>::new();
+
+                if let Ok(mut src) = File::open(source)
+                {
+                    if let Ok(_) = src.read_to_end(&mut src_buf)
+                    {
+                        Some(src_buf)
+                    }
+                    else
+                    {
+                        None
+                    }
+                }
+                else
+                {
+                    None
+                }
+            }
+        },
+    };
+
+    if let Some(src_buf) = src_buf
+    {
+        Some(load_xml(&src_buf))
+    }
+    else
+    {
+        None
+    }
+}
+
+fn load_xml(src_buf: &Vec<u8>) -> ImageInfo
+{
+    let src_base = filter_xml(src_buf, LayerTarget::Base);
+    let src_base_text = filter_xml(src_buf, LayerTarget::BaseText);
+    let src_long_handle = filter_xml(src_buf, LayerTarget::LongHandle);
+    let src_short_handle = filter_xml(src_buf, LayerTarget::ShortHandle);
+    let src_second_handle = filter_xml(src_buf, LayerTarget::SecondHandle);
+    let src_center_circle = filter_xml(src_buf, LayerTarget::CenterCircle);
+    let src_sub_second_base = filter_xml(src_buf, LayerTarget::SubSecondBase);
+    let src_sub_second_handle = filter_xml(src_buf, LayerTarget::SubSecondHandle);
+    let src_sub_second_center_circle = filter_xml(src_buf, LayerTarget::SubSecondCenterCircle);
+    let src_config = filter_xml(src_buf, LayerTarget::Config);
+
+    let fn_make_svg_handle = |src_xml: &Vec<u8>| {
+        let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(src_xml));
+
+        Some(
+            rsvg::Loader::new()
+                .read_stream(
+                    &svg_stream,
+                    None::<&gtk::gio::File>,
+                    None::<&gtk::gio::Cancellable>,
+                )
+                .unwrap(),
+        )
+    };
+
+    let mut ret = ImageInfo::new();
+
+    if let Ok(Some(src_xml)) = src_config
+    {
+        if let Ok(config) = parse_xml_config(&src_xml)
+        {
+            debug!("config load   {:?}", config);
+
+            let mut config = config;
+            config.update_default();
+
+            debug!("config update {:?}", config);
+
+            ret.config = config;
+        }
+    }
+
+    if let Ok(Some(src_xml)) = src_base
+    {
+        if let Ok(result) = parse_xml_sz_and_vbox(&src_xml)
+        {
+            ret.sz = result.0;
+            ret.viewbox_xy = result.1;
+            ret.viewbox_sz = result.2;
+        }
+
+        ret.svgh_base = fn_make_svg_handle(&src_xml);
+        ret.bytes_base = Some(src_xml);
+    }
+
+    if let Ok(Some(src_xml)) = src_base_text
+    {
+        ret.bytes_base_text = Some(src_xml);
+    }
+
+    if let Ok(Some(src_xml)) = src_long_handle
+    {
+        ret.svgh_long_handle = fn_make_svg_handle(&src_xml);
+        ret.bytes_long_handle = Some(src_xml);
+    }
+
+    if let Ok(Some(src_xml)) = src_short_handle
+    {
+        ret.svgh_short_handle = fn_make_svg_handle(&src_xml);
+        ret.bytes_short_handle = Some(src_xml);
+    }
+
+    if let Ok(Some(src_xml)) = src_second_handle
+    {
+        ret.svgh_second_handle = fn_make_svg_handle(&src_xml);
+        ret.bytes_second_handle = Some(src_xml);
+    }
+
+    if let Ok(Some(src_xml)) = src_center_circle
+    {
+        if let Ok(center) = parse_xml_center(&src_xml, LayerTarget::CenterCircle)
+        {
+            ret.center = center;
+        }
+
+        debug!("ret.center: {:?}", ret.center);
+
+        ret.svgh_center_circle = fn_make_svg_handle(&src_xml);
+        ret.bytes_center_circle = Some(src_xml);
+    }
+
+    if let Ok(Some(src_xml)) = src_sub_second_base
+    {
+        ret.svgh_sub_second_base = fn_make_svg_handle(&src_xml);
+        ret.bytes_sub_second_base = Some(src_xml);
+    }
+
+    if let Ok(Some(src_xml)) = src_sub_second_handle
+    {
+        ret.svgh_sub_second_handle = fn_make_svg_handle(&src_xml);
+        ret.bytes_sub_second_handle = Some(src_xml);
+    }
+
+    if let Ok(Some(src_xml)) = src_sub_second_center_circle
+    {
+        if let Ok(center) = parse_xml_center(&src_xml, LayerTarget::SubSecondCenterCircle)
+        {
+            ret.center_sub_second = center;
+        }
+
+        debug!("ret.center: {:?}", ret.center);
+
+        ret.svgh_sub_second_center_circle = fn_make_svg_handle(&src_xml);
+        ret.bytes_sub_second_center_circle = Some(src_xml);
+    }
+
+    ret
+}
+
+fn load_logo() -> Option<Pixbuf>
+{
+    if ENABLE_FILE_INCLUDE
+    {
+        let mut src_buf = &INCLUDE_BYTES_LOGO_PNG[..];
+        let surface = ImageSurface::create_from_png(&mut src_buf).unwrap();
+        return gdk::pixbuf_get_from_surface(&surface, 0, 0, surface.width(), surface.height());
+    }
+    else
+    {
+        // load logo
+        let mut src_buf = Vec::<u8>::new();
+
+        let mut src = File::open(FILE_LOGO_PNG).unwrap();
+        src.read_to_end(&mut src_buf).unwrap();
+
+        if FILE_LOGO_PNG.ends_with(".svg")
+        {
+            if let Ok(result) = parse_xml_sz_and_vbox(&src_buf)
+            {
+                let sz = result.0;
+                let surface = ImageSurface::create(Format::ARgb32, sz.x, sz.y).unwrap();
+
+                {
+                    let svg_stream =
+                        gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(&src_buf));
+
+                    let svg_handle = rsvg::Loader::new()
+                        .read_stream(
+                            &svg_stream,
+                            None::<&gtk::gio::File>,
+                            None::<&gtk::gio::Cancellable>,
+                        )
+                        .unwrap();
+
+                    let cctx = Context::new(&surface).unwrap();
+                    let viewport = Rectangle::new(0.0, 0.0, sz.x as f64, sz.y as f64);
+
+                    let svg_renderer = rsvg::CairoRenderer::new(&svg_handle);
+                    svg_renderer.render_document(&cctx, &viewport).unwrap();
+                }
+
+                return gdk::pixbuf_get_from_surface(
+                    &surface,
+                    0,
+                    0,
+                    surface.width(),
+                    surface.height(),
+                );
+            }
+        }
+        else if FILE_LOGO_PNG.ends_with(".png")
+        {
+            let mut src_buf = &src_buf[..]; // with io.Read Trait
+
+            let surface = ImageSurface::create_from_png(&mut src_buf).unwrap();
+
+            return gdk::pixbuf_get_from_surface(&surface, 0, 0, surface.width(), surface.height());
+        }
+    }
+
+    None
+}
+
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    strum::EnumString,
+    strum::Display,
+    strum::EnumIter,
+    Copy,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
+enum AppInfoTheme
+{
+    Theme1,
+    Theme2,
+    Theme3,
+    Theme4,
+    Theme5,
+    Theme6,
+    Theme7,
+    Custom,
+}
+
+#[derive(
+    Debug,
+    PartialEq,
+    strum::EnumString,
+    strum::Display,
+    strum::EnumIter,
+    Copy,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
+enum AppInfoFormatDate
+{
+    DtFmt1,
+    DtFmt2,
+    DtFmt3,
+    DtFmt4,
+    DtCustom,
+}
+
+impl AppInfoFormatDate
+{
+    fn format_str(&self) -> (&str, &str)
+    {
+        // see https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+
+        match self
+        {
+            Self::DtFmt1 =>
+            {
+                (
+                    "%F", /* Year-month-day format (ISO 8601). Same as %Y-%m-%d. */
+                    "Year-month-day (e.g., 2025-10-31)",
+                )
+            },
+            Self::DtFmt2 =>
+            {
+                (
+                    "%Y/%m/%d", /* Year/month/day format. Same as %Y/%m/%d. */
+                    "Year/month/day (e.g., 2025/10/31)",
+                )
+            },
+            Self::DtFmt3 =>
+            {
+                (
+                    "%D", /* Month/day/year format. Same as %m/%d/%y. */
+                    "Month/day/year (e.g., 10/31/25)",
+                )
+            },
+            Self::DtFmt4 =>
+            {
+                (
+                    "%v", /* Day-month-year format. Same as %e-%b-%Y. */
+                    "Day-month-year (e.g., 31-Oct-2025)",
+                )
+            },
+            _ => ("", "Custom"),
+        }
+    }
+}
+
+#[derive(
+    Debug,
+    PartialEq,
+    strum::EnumString,
+    strum::Display,
+    strum::EnumIter,
+    Copy,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
+enum AppInfoFormatTime
+{
+    TmFmt1,
+    TmFmt2,
+    TmFmt3,
+    TmFmt4,
+    TmFmt5,
+    TmCustom,
+}
+
+impl AppInfoFormatTime
+{
+    fn format_str(&self) -> (&str, &str)
+    {
+        // see https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+
+        match self
+        {
+            Self::TmFmt1 =>
+            {
+                (
+                    "%r", /* Locale’s 12 hour clock time. (e.g., 11:11:04 PM). Falls back to %X if the locale does not have a 12 hour clock format. */
+                    "12 hour clock time with AM/PM (e.g., 11:11:04 PM)",
+                )
+            },
+            Self::TmFmt2 =>
+            {
+                (
+                    "%I:%M:%S", /* Locale’s 12 hour clock time. (e.g., 11:11:04). Falls back to %X if the locale does not have a 12 hour clock format. */
+                    "12 hour clock time without AM/PM (e.g., 11:11:04)",
+                )
+            },
+            Self::TmFmt3 =>
+            {
+                (
+                    "%T", /* Hour-minute-second format. Same as %H:%M:%S. */
+                    "Hour-minute-second (e.g., 23:11:04) ",
+                )
+            },
+            Self::TmFmt4 =>
+            {
+                (
+                    "%R", /* Hour-minute format. Same as %H:%M. */
+                    "Hour-minute (e.g., 23:11)",
+                )
+            },
+            Self::TmFmt5 => ("%p", "AM/PM (e.g., AM)"),
+            _ => ("", "Custom"),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AppInfo
+{
+    always_on_top: bool,
+    lock_pos: bool,
+    show_seconds: bool,
+    enable_sub_second_handle: bool,
+    enable_second_handle_smoothly: bool,
+    enable_text_time_zone: bool,
+    enable_text_date: bool,
+    enable_text_time: bool,
+    enable_text_time_segment: bool,
+    enable_text_time_segment_hour12: bool,
+    enable_text_time_segment_dotblink: bool,
+    text_format_date: AppInfoFormatDate,
+    text_format_date_custom: Option<String>,
+    text_format_time: AppInfoFormatTime,
+    text_format_time_custom: Option<String>,
+    time_zone: String,
+    theme: AppInfoTheme,
+    theme_custom: Option<String>,
+    zoom: u32,
+    window_pos: Option<(i32, i32)>,
+    #[serde(skip)]
+    zoom_update: bool,
+    #[serde(skip)]
+    time_disp: NaiveDateTime,
+    #[serde(skip)]
+    time_disp_st: Option<(NaiveDateTime, DateTime<Utc>)>,
+    #[serde(skip)]
+    timer_sourceid: RefCell<Option<gtk::glib::SourceId>>,
+    #[serde(skip)]
+    time_disp_force: Option<NaiveTime>,
+    #[serde(skip)]
+    theme_names: HashMap<AppInfoTheme, (Option<String>, Option<String>)>,
+}
+
+impl AppInfo
+{
+    fn new() -> Self
+    {
+        Self {
+            always_on_top: true,
+            lock_pos: false,
+            show_seconds: true,
+            enable_sub_second_handle: false,
+            enable_second_handle_smoothly: true,
+            enable_text_time_zone: true,
+            enable_text_date: true,
+            enable_text_time: true,
+            enable_text_time_segment: true,
+            enable_text_time_segment_hour12: false,
+            enable_text_time_segment_dotblink: true,
+            text_format_date: AppInfoFormatDate::DtFmt1,
+            text_format_date_custom: None,
+            text_format_time: AppInfoFormatTime::TmFmt1,
+            text_format_time_custom: None,
+            time_zone: String::new(),
+            theme: AppInfoTheme::Theme1,
+            theme_custom: None,
+            zoom: 100,
+            window_pos: None,
+            zoom_update: true,
+            time_disp: DateTime::UNIX_EPOCH.naive_utc(),
+            time_disp_st: None,
+            timer_sourceid: RefCell::new(None),
+            time_disp_force: None,
+            theme_names: HashMap::new(),
+        }
+    }
+
+    fn reset(&mut self)
+    {
+        self.zoom_update = true;
+        self.time_disp = Local::now().date_naive().and_hms_opt(0, 0, 0).unwrap();
+        self.time_disp_st = None;
+
+        self.theme_custom = if let Ok(x) = std::env::var(ENV_KEY_THEME_CUSTOM)
+        {
+            Some(x)
+        }
+        else
+        {
+            None
+        };
+
+        self.time_disp_force = if let Ok(x) = std::env::var(ENV_KEY_FIX_TIME)
+        {
+            if let Ok(x) = NaiveTime::parse_from_str(&x, "%H:%M:%S")
+            {
+                Some(x)
+            }
+            else if let Ok(x) = NaiveTime::parse_from_str(&x, "%H:%M")
+            {
+                Some(x)
+            }
+            else
+            {
+                None
+            }
+        }
+        else
+        {
+            None
+        };
 
         // theme loading
 
         for theme in AppInfoTheme::iter()
         {
-            if let Some( image_info ) = load_theme( theme, self.theme_custom.clone() )
+            if let Some(image_info) = load_theme(theme, self.theme_custom.clone())
             {
-                self.theme_names.insert( theme,( image_info.config.get_theme_name(), image_info.config.get_theme_description() ) );
+                self.theme_names.insert(
+                    theme,
+                    (
+                        image_info.config.get_theme_name(),
+                        image_info.config.get_theme_description(),
+                    ),
+                );
             }
         }
 
-        debug!( "theme_names: {:?}", self.theme_names );
-
+        debug!("theme_names: {:?}", self.theme_names);
     }
 }
 
 const MOVE_FAST_SECS: i64 = 5;
 
-fn update_watch( da: &DrawingArea, app_info: &mut AppInfo )
+fn update_watch(da: &DrawingArea, app_info: &mut AppInfo)
 {
     let time_now = Local::now();
 
-    let time_now_naive =
-        if app_info.time_disp_force.is_some()
-        {
-            time_now.with_time( app_info.time_disp_force.as_ref().copied().unwrap() ).unwrap().naive_local()
-        }
-        else if app_info.time_zone == ""
-        {
-            time_now.naive_local()
-        }
-        else
-        {
-            let time_zone = app_info.time_zone.clone();
+    let time_now_naive = if app_info.time_disp_force.is_some()
+    {
+        time_now
+            .with_time(app_info.time_disp_force.as_ref().copied().unwrap())
+            .unwrap()
+            .naive_local()
+    }
+    else if app_info.time_zone == ""
+    {
+        time_now.naive_local()
+    }
+    else
+    {
+        let time_zone = app_info.time_zone.clone();
 
-            if time_zone.starts_with( "GMT+" ) || time_zone.starts_with( "GMT-" )
+        if time_zone.starts_with("GMT+") || time_zone.starts_with("GMT-")
+        {
+            // FIX
+            // chrono::Tz::Etc__GMTMinus1 = +1 -> -1
+            // chrono::Tz::Etc__GMTPlus1  = -1 -> +1
+            // chrono::Tz::Etc__GMTMinus<x> = +<x> -> -<x>
+            // chrono::Tz::Etc__GMTPlus<x>  = -<x> -> +<x>
+            // see https://github.com/chronotope/chrono-tz/issues/16
+            // see https://github.com/eggert/tz/blob/ab21ad9710b88f28995b7ed47c6efda47ffb1be5/etcetera#L37-L43
+            // see ```
+            // # Be consistent with POSIX TZ settings in the Zone names,
+            // # even though this is the opposite of what many people expect.
+            // # POSIX has positive signs west of Greenwich, but many people expect
+            // # positive signs east of Greenwich.  For example, TZ='Etc/GMT+4' uses
+            // # the abbreviation "-04" and corresponds to 4 hours behind UT
+            // # (i.e. west of Greenwich) even though many people would expect it to
+            // # mean 4 hours ahead of UT (i.e. east of Greenwich).
+            // ```
+
+            if let Ok(time_delta) = i32::from_str(time_zone.trim_start_matches("GMT"))
             {
-                // FIX
-                // chrono::Tz::Etc__GMTMinus1 = +1 -> -1
-                // chrono::Tz::Etc__GMTPlus1  = -1 -> +1
-                // chrono::Tz::Etc__GMTMinus<x> = +<x> -> -<x>
-                // chrono::Tz::Etc__GMTPlus<x>  = -<x> -> +<x>
-                // see https://github.com/chronotope/chrono-tz/issues/16
-                // see https://github.com/eggert/tz/blob/ab21ad9710b88f28995b7ed47c6efda47ffb1be5/etcetera#L37-L43
-                // see ```
-                // # Be consistent with POSIX TZ settings in the Zone names,
-                // # even though this is the opposite of what many people expect.
-                // # POSIX has positive signs west of Greenwich, but many people expect
-                // # positive signs east of Greenwich.  For example, TZ='Etc/GMT+4' uses
-                // # the abbreviation "-04" and corresponds to 4 hours behind UT
-                // # (i.e. west of Greenwich) even though many people would expect it to
-                // # mean 4 hours ahead of UT (i.e. east of Greenwich).
-                // ```
-
-                if let Ok( time_delta ) = i32::from_str( time_zone.trim_start_matches( "GMT" ) )
-                {
-                    let offset = chrono::FixedOffset::east_opt( time_delta * 60 * 60 ).unwrap();
-                    time_now.with_timezone( &offset ).naive_local()
-                }
-                else
-                {
-                    time_now.naive_local()
-                }
+                let offset = chrono::FixedOffset::east_opt(time_delta * 60 * 60).unwrap();
+                time_now.with_timezone(&offset).naive_local()
             }
             else
             {
-                let tz: Result< chrono_tz::Tz, _> = time_zone.parse();
-
-                match tz
-                {
-                    Ok( offset ) =>
-                    {
-                        time_now.with_timezone( &offset ).naive_local()
-                    }
-                ,    _ =>
-                    {
-                        time_now.naive_local()
-                    }
-                }
+                time_now.naive_local()
             }
-       }
-       ;
+        }
+        else
+        {
+            let tz: Result<chrono_tz::Tz, _> = time_zone.parse();
+
+            match tz
+            {
+                Ok(offset) => time_now.with_timezone(&offset).naive_local(),
+                _ => time_now.naive_local(),
+            }
+        }
+    };
 
     let has_time_disp_st = app_info.time_disp_st.is_some();
 
-    let time_delta = ( time_now_naive - app_info.time_disp ).num_seconds();
+    let time_delta = (time_now_naive - app_info.time_disp).num_seconds();
 
     if time_delta.abs() <= 10
     {
@@ -1389,18 +1512,19 @@ fn update_watch( da: &DrawingArea, app_info: &mut AppInfo )
     {
         if app_info.time_disp_st.is_none()
         {
-            app_info.time_disp_st = Some( ( app_info.time_disp, time_now.to_utc() ) );
+            app_info.time_disp_st = Some((app_info.time_disp, time_now.to_utc()));
         }
 
-        let ( time_disp_st, time_st ) = app_info.time_disp_st.unwrap();
+        let (time_disp_st, time_st) = app_info.time_disp_st.unwrap();
 
-        let timestamp_disp_du = TimeDelta::seconds( MOVE_FAST_SECS );
+        let timestamp_disp_du = TimeDelta::seconds(MOVE_FAST_SECS);
 
-        let mut tweener = tween::Tweener::quad_in_out( 0.0, 1.0, timestamp_disp_du.num_milliseconds()  );
+        let mut tweener =
+            tween::Tweener::quad_in_out(0.0, 1.0, timestamp_disp_du.num_milliseconds());
 
         let timestamp_disp_diff = time_now.to_utc() - time_st;
 
-        let pos = tweener.move_to( timestamp_disp_diff.num_milliseconds() );
+        let pos = tweener.move_to(timestamp_disp_diff.num_milliseconds());
 
         if pos < 0.0 || pos >= 1.0
         {
@@ -1409,7 +1533,9 @@ fn update_watch( da: &DrawingArea, app_info: &mut AppInfo )
         }
         else
         {
-            let add=  TimeDelta::milliseconds( ( ( time_now_naive - time_disp_st ).num_milliseconds() as f64 * pos ) as i64 );
+            let add = TimeDelta::milliseconds(
+                ((time_now_naive - time_disp_st).num_milliseconds() as f64 * pos) as i64,
+            );
             app_info.time_disp = time_disp_st + add;
         }
     }
@@ -1423,20 +1549,18 @@ fn update_watch( da: &DrawingArea, app_info: &mut AppInfo )
         {
             let da = da.clone();
 
-            let old_timer_sourceid = app_info.timer_sourceid.replace(
-                Some(
-                    gtk::glib::source::timeout_add_local(
-                        std::time::Duration::from_millis( get_timer_interval( is_fast ) ),
-                        move ||
-                        {
+            let old_timer_sourceid =
+                app_info
+                    .timer_sourceid
+                    .replace(Some(gtk::glib::source::timeout_add_local(
+                        std::time::Duration::from_millis(get_timer_interval(is_fast)),
+                        move || {
                             da.queue_draw();
                             gtk::glib::ControlFlow::Continue
-                        }
-                    )
-                )
-            );
+                        },
+                    )));
 
-            if let Some( sourceid ) = old_timer_sourceid
+            if let Some(sourceid) = old_timer_sourceid
             {
                 sourceid.remove();
             }
@@ -1444,51 +1568,50 @@ fn update_watch( da: &DrawingArea, app_info: &mut AppInfo )
     }
 }
 
-fn update_region<'a>( window: &'a ApplicationWindow, image_info: &'a ImageInfo, app_info: &'a mut AppInfo )
+fn update_region<'a>(
+    window: &'a ApplicationWindow,
+    image_info: &'a ImageInfo,
+    app_info: &'a mut AppInfo,
+)
 {
-    if  image_info.sz.x > 0
-    &&  image_info.sz.y > 0
-    &&  app_info.zoom > 0
+    if image_info.sz.x > 0 && image_info.sz.y > 0 && app_info.zoom > 0
     {
         let zoom_factor = app_info.zoom as f64 / 100.0;
 
         let sz = DVec2::new(
-            image_info.sz.x as f64 * zoom_factor
-        ,   image_info.sz.y as f64 * zoom_factor
+            image_info.sz.x as f64 * zoom_factor,
+            image_info.sz.y as f64 * zoom_factor,
         );
 
         if app_info.zoom_update
         {
-            window.resize( sz.x as i32, sz.y as i32 );
-            window.shape_combine_region( make_region( &image_info, app_info ).as_ref() );
+            window.resize(sz.x as i32, sz.y as i32);
+            window.shape_combine_region(make_region(&image_info, app_info).as_ref());
             app_info.zoom_update = false;
         }
-        else if let Some( x ) = image_info.config.enable_update_region_every_time && x
+        else if let Some(x) = image_info.config.enable_update_region_every_time
+            && x
         {
-            window.shape_combine_region( make_region( &image_info, app_info ).as_ref() );
+            window.shape_combine_region(make_region(&image_info, app_info).as_ref());
         }
     }
 }
 
-
-fn make_region( image_info : &ImageInfo, app_info: &AppInfo ) -> Option< Region >
+fn make_region(image_info: &ImageInfo, app_info: &AppInfo) -> Option<Region>
 {
     let zoom_factor = app_info.zoom as f64 / 100.0;
 
     let sz = DVec2::new(
-        image_info.sz.x as f64 * zoom_factor
-    ,   image_info.sz.y as f64 * zoom_factor
+        image_info.sz.x as f64 * zoom_factor,
+        image_info.sz.y as f64 * zoom_factor,
     );
 
-    if     image_info.sz.x > 0
-        && image_info.sz.y > 0
-        && sz.x > 0.0
-        && sz.y > 0.0
+    if image_info.sz.x > 0 && image_info.sz.y > 0 && sz.x > 0.0 && sz.y > 0.0
     {
-        let surface_mask = ImageSurface::create(Format::A8, sz.x as i32, sz.y as i32 ).unwrap();
+        let surface_mask = ImageSurface::create(Format::A8, sz.x as i32, sz.y as i32).unwrap();
         let cctx = Context::new(&surface_mask).unwrap();
 
-        draw_watch( &cctx, image_info, app_info, true );
+        draw_watch(&cctx, image_info, app_info, true);
 
         surface_mask.create_region()
     }
@@ -1498,80 +1621,89 @@ fn make_region( image_info : &ImageInfo, app_info: &AppInfo ) -> Option< Region 
     }
 }
 
-fn draw_watch(
-    cctx : &Context, image_info : &ImageInfo, app_info: &AppInfo, for_region: bool )
+fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_region: bool)
 {
     let zoom_factor = app_info.zoom as f64 / 100.0;
 
     let sz = DVec2::new(
-        image_info.sz.x as f64 * zoom_factor
-    ,   image_info.sz.y as f64 * zoom_factor
+        image_info.sz.x as f64 * zoom_factor,
+        image_info.sz.y as f64 * zoom_factor,
     );
 
-    let viewport = Rectangle::new(0.0, 0.0, sz.x, sz.y );
+    let viewport = Rectangle::new(0.0, 0.0, sz.x, sz.y);
 
-    let func_render = | svg_handle : &SvgHandle |
-    {
+    let func_render = |svg_handle: &SvgHandle| {
         let svg_renderer = rsvg::CairoRenderer::new(svg_handle);
         svg_renderer.render_document(cctx, &viewport).unwrap();
     };
 
-    let center = DVec2
-    {
-        x: sz.x * ( image_info.center.x / image_info.viewbox_sz.x )
-    ,   y: sz.y * ( image_info.center.y / image_info.viewbox_sz.y )
+    let center = DVec2 {
+        x: sz.x * (image_info.center.x / image_info.viewbox_sz.x),
+        y: sz.y * (image_info.center.y / image_info.viewbox_sz.y),
     };
 
-    let center_sub_second = DVec2
-    {
-        x: sz.x * ( image_info.center_sub_second.x / image_info.viewbox_sz.x )
-    ,   y: sz.y * ( image_info.center_sub_second.y / image_info.viewbox_sz.y )
+    let center_sub_second = DVec2 {
+        x: sz.x * (image_info.center_sub_second.x / image_info.viewbox_sz.x),
+        y: sz.y * (image_info.center_sub_second.y / image_info.viewbox_sz.y),
     };
 
-    let func_render_rotate = | svg_handle : &SvgHandle, _center: &DVec2, angle : f64 |
-    {
+    let func_render_rotate = |svg_handle: &SvgHandle, _center: &DVec2, angle: f64| {
         let _ = cctx.save();
 
-        cctx.translate( _center.x * 1.0, _center.y * 1.0 );
-        cctx.rotate( angle * ( PI / 180.0 ) );
-        cctx.translate( _center.x * -1.0, _center.y * -1.0 );
+        cctx.translate(_center.x * 1.0, _center.y * 1.0);
+        cctx.rotate(angle * (PI / 180.0));
+        cctx.translate(_center.x * -1.0, _center.y * -1.0);
 
-        let svg_renderer = rsvg::CairoRenderer::new( svg_handle );
+        let svg_renderer = rsvg::CairoRenderer::new(svg_handle);
         svg_renderer.render_document(cctx, &viewport).unwrap();
 
         let _ = cctx.restore();
     };
 
-    let time_now =
-        if app_info.time_disp_force.is_some()
-        {
-            //DateTime::UNIX_EPOCH.with_timezone( &Local )
-            Local::now().with_time( app_info.time_disp_force.unwrap() ).unwrap()
-        }
-        else
-        {
-            Local::now()
-        }
-        ;
+    let time_now = if app_info.time_disp_force.is_some()
+    {
+        //DateTime::UNIX_EPOCH.with_timezone( &Local )
+        Local::now()
+            .with_time(app_info.time_disp_force.unwrap())
+            .unwrap()
+    }
+    else
+    {
+        Local::now()
+    };
 
-    let time_secs = app_info.time_disp.hour12().1 * 60 * 60 + app_info.time_disp.minute() * 60 + app_info.time_disp.second();
+    let time_secs = app_info.time_disp.hour12().1 * 60 * 60
+        + app_info.time_disp.minute() * 60
+        + app_info.time_disp.second();
 
-    let angle_hour = time_secs as f64 / ( 12.0 * 60.0 * 60.0 ) * 360.0;
-    let angle_min = time_secs as f64 / ( 60.0 * 60.0 ) * 360.0;
+    let angle_hour = time_secs as f64 / (12.0 * 60.0 * 60.0) * 360.0;
+    let angle_min = time_secs as f64 / (60.0 * 60.0) * 360.0;
 
-    let angle_sec_delta = if app_info.enable_second_handle_smoothly { time_now.timestamp_subsec_millis() as f64 / 1000.0 } else { 0.0 };
-    let angle_sec = ( time_now.second() as f64 + angle_sec_delta ) / 60.0 * 360.0;
+    let angle_sec_delta = if app_info.enable_second_handle_smoothly
+    {
+        time_now.timestamp_subsec_millis() as f64 / 1000.0
+    }
+    else
+    {
+        0.0
+    };
+    let angle_sec = (time_now.second() as f64 + angle_sec_delta) / 60.0 * 360.0;
 
     // paint base BLACK ( for not region )
     if !for_region
     {
-        cctx.rectangle( viewport.x(), viewport.y(), viewport.width(), viewport.height() );
+        cctx.rectangle(
+            viewport.x(),
+            viewport.y(),
+            viewport.width(),
+            viewport.height(),
+        );
         cctx.set_source_rgb(0.0, 0.0, 0.0);
         let _ = cctx.fill();
     }
 
     // render base
-    if let Some( svgh ) = image_info.svgh_base.as_ref()
+    if let Some(svgh) = image_info.svgh_base.as_ref()
     {
         let svg_renderer = rsvg::CairoRenderer::new(svgh);
         svg_renderer.render_document(cctx, &viewport).unwrap();
@@ -1579,113 +1711,148 @@ fn draw_watch(
 
     // render sub_base_text
 
-    let with_text_time_zone = if let Some( x ) = image_info.config.with_text_time_zone && x { true } else { false };
-    let with_text_date = if let Some( x ) = image_info.config.with_text_date && x { true } else { false };
-    let with_text_time = if let Some( x ) = image_info.config.with_text_time && x { true } else { false };
-    let with_text_segment = if let Some( x ) = image_info.config.with_text_segment && x { true } else { false };
+    let with_text_time_zone = if let Some(x) = image_info.config.with_text_time_zone
+        && x
+    {
+        true
+    }
+    else
+    {
+        false
+    };
+    let with_text_date = if let Some(x) = image_info.config.with_text_date
+        && x
+    {
+        true
+    }
+    else
+    {
+        false
+    };
+    let with_text_time = if let Some(x) = image_info.config.with_text_time
+        && x
+    {
+        true
+    }
+    else
+    {
+        false
+    };
+    let with_text_segment = if let Some(x) = image_info.config.with_text_segment
+        && x
+    {
+        true
+    }
+    else
+    {
+        false
+    };
 
-    if ( with_text_time_zone || with_text_date || with_text_time || with_text_segment )
-    && let Some( x ) = image_info.bytes_base_text.as_ref()
+    if (with_text_time_zone || with_text_date || with_text_time || with_text_segment)
+        && let Some(x) = image_info.bytes_base_text.as_ref()
     {
         // text replace
-        static RE_REPLACE: LazyLock<regex::bytes::Regex> = LazyLock::new(
-            ||
-            {
-                regex::bytes::Regex::new(r"(?i)\{\{\s*([A-Za-z0-9_]+)\s*\}\}").unwrap()
-            }
-        );
+        static RE_REPLACE: LazyLock<regex::bytes::Regex> = LazyLock::new(|| {
+            regex::bytes::Regex::new(r"(?i)\{\{\s*([A-Za-z0-9_]+)\s*\}\}").unwrap()
+        });
 
-        static RE_SEGMENT_NUM: LazyLock<regex::bytes::Regex> = LazyLock::new(
-            ||
-            {
-                regex::bytes::Regex::new(r"(?i)seg_(hh|hl|mh|ml|sh|sl)([a-g])").unwrap()
-            }
-        );
+        static RE_SEGMENT_NUM: LazyLock<regex::bytes::Regex> = LazyLock::new(|| {
+            regex::bytes::Regex::new(r"(?i)seg_(hh|hl|mh|ml|sh|sl)([a-g])").unwrap()
+        });
 
-        static RE_SEGMENT_AMPM: LazyLock<regex::bytes::Regex> = LazyLock::new(
-            ||
-            {
-                regex::bytes::Regex::new(r"(?i)seg_(amb|pmb|am|pm)").unwrap()
-            }
-        );
+        static RE_SEGMENT_AMPM: LazyLock<regex::bytes::Regex> =
+            LazyLock::new(|| regex::bytes::Regex::new(r"(?i)seg_(amb|pmb|am|pm)").unwrap());
 
-        static RE_SEGMENT_DOT: LazyLock<regex::bytes::Regex> = LazyLock::new(
-            ||
-            {
-                regex::bytes::Regex::new(r"(?i)seg_dot").unwrap()
-            }
-        );
+        static RE_SEGMENT_DOT: LazyLock<regex::bytes::Regex> =
+            LazyLock::new(|| regex::bytes::Regex::new(r"(?i)seg_dot").unwrap());
 
         let mut buf: Vec<u8> = Vec::new();
         let mut last_match = 0;
 
-        for caps in RE_REPLACE.captures_iter( x )
+        for caps in RE_REPLACE.captures_iter(x)
         {
             let m0 = caps.get(0).unwrap();
             let m1 = caps.get(1).unwrap();
 
-            buf.extend_from_slice( &x[last_match..m0.start()] );
+            buf.extend_from_slice(&x[last_match .. m0.start()]);
 
             let kw = m1.as_bytes().to_ascii_lowercase();
 
             match kw.as_slice()
             {
                 /* https://docs.rs/chrono/latest/chrono/format/strftime/index.html */
-
                 b"time_zone" =>
                 {
                     if with_text_time_zone && app_info.enable_text_time_zone
                     {
-                        buf.extend_from_slice( app_info.time_zone.as_bytes() );
+                        buf.extend_from_slice(app_info.time_zone.as_bytes());
                     }
-                }
+                },
                 b"date" =>
                 {
                     if with_text_date && app_info.enable_text_date
                     {
-                        if app_info.text_format_date == AppInfoFormatDate::DtCustom && app_info.text_format_date_custom.is_some()
+                        if app_info.text_format_date == AppInfoFormatDate::DtCustom
+                            && app_info.text_format_date_custom.is_some()
                         {
-                            let df = app_info.time_disp.format( app_info.text_format_date_custom.as_ref().unwrap() );
+                            let df = app_info
+                                .time_disp
+                                .format(app_info.text_format_date_custom.as_ref().unwrap());
 
                             let mut buffer = String::new();
 
                             if let Ok(_) = df.write_to(&mut buffer)
                             {
-                                buf.extend_from_slice( buffer.as_bytes() );
+                                buf.extend_from_slice(buffer.as_bytes());
                             }
                         }
                         else
                         {
-                            buf.extend_from_slice( app_info.time_disp.format( app_info.text_format_date.format_str().0 ).to_string().as_bytes() );
+                            buf.extend_from_slice(
+                                app_info
+                                    .time_disp
+                                    .format(app_info.text_format_date.format_str().0)
+                                    .to_string()
+                                    .as_bytes(),
+                            );
                         }
                     }
-                }
+                },
                 b"time" =>
                 {
                     if with_text_time && app_info.enable_text_time
                     {
-                        if app_info.text_format_time == AppInfoFormatTime::TmCustom && app_info.text_format_time_custom.is_some()
+                        if app_info.text_format_time == AppInfoFormatTime::TmCustom
+                            && app_info.text_format_time_custom.is_some()
                         {
-                            let df = app_info.time_disp.format( app_info.text_format_time_custom.as_ref().unwrap() );
+                            let df = app_info
+                                .time_disp
+                                .format(app_info.text_format_time_custom.as_ref().unwrap());
 
                             let mut buffer = String::new();
 
                             if let Ok(_) = df.write_to(&mut buffer)
                             {
-                                buf.extend_from_slice( buffer.as_bytes() );
+                                buf.extend_from_slice(buffer.as_bytes());
                             }
                         }
                         else
                         {
-                            buf.extend_from_slice( app_info.time_disp.format( app_info.text_format_time.format_str().0 ).to_string().as_bytes() );
+                            buf.extend_from_slice(
+                                app_info
+                                    .time_disp
+                                    .format(app_info.text_format_time.format_str().0)
+                                    .to_string()
+                                    .as_bytes(),
+                            );
                         }
                     }
-                }
+                },
                 _ =>
                 {
                     if with_text_segment && app_info.enable_text_time_segment
                     {
-                        if let Some( caps ) = RE_SEGMENT_NUM.captures( kw.as_slice() )
+                        if let Some(caps) = RE_SEGMENT_NUM.captures(kw.as_slice())
                         {
                             /*
                                 <g visibility="{{seg_(hh|hl|mh|ml|sh|sl)([a-g])}}"></g>
@@ -1716,49 +1883,66 @@ fn draw_watch(
 
                             let flag_12 = app_info.enable_text_time_segment_hour12;
 
-                            let num =
-                                match m1.as_bytes()
+                            let num = match m1.as_bytes()
+                            {
+                                b"hh" =>
                                 {
-                                    b"hh" => { ( if flag_12 { app_info.time_disp.hour12().1 } else { app_info.time_disp.hour() } ) / 10 }
-                                ,   b"hl" => { ( if flag_12 { app_info.time_disp.hour12().1 } else { app_info.time_disp.hour() } ) % 10 }
-                                ,   b"mh" => { app_info.time_disp.minute() / 10 }
-                                ,   b"ml" => { app_info.time_disp.minute() % 10 }
-                                ,   b"sh" => { app_info.time_disp.second() / 10 }
-                                ,   b"sl" => { app_info.time_disp.second() % 10 }
-                                ,   _ => { 0 }
-                                };
+                                    (if flag_12
+                                    {
+                                        app_info.time_disp.hour12().1
+                                    }
+                                    else
+                                    {
+                                        app_info.time_disp.hour()
+                                    }) / 10
+                                },
+                                b"hl" =>
+                                {
+                                    (if flag_12
+                                    {
+                                        app_info.time_disp.hour12().1
+                                    }
+                                    else
+                                    {
+                                        app_info.time_disp.hour()
+                                    }) % 10
+                                },
+                                b"mh" => app_info.time_disp.minute() / 10,
+                                b"ml" => app_info.time_disp.minute() % 10,
+                                b"sh" => app_info.time_disp.second() / 10,
+                                b"sl" => app_info.time_disp.second() % 10,
+                                _ => 0,
+                            };
 
                             // num -> seg
                             // https://ja.wikipedia.org/wiki/7%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%83%87%E3%82%A3%E3%82%B9%E3%83%97%E3%83%AC%E3%82%A4#%E6%95%B0%E3%81%8B%E3%82%897%E3%82%BB%E3%82%B0%E3%83%A1%E3%83%B3%E3%83%88%E3%82%B3%E3%83%BC%E3%83%89%E3%81%B8%E3%81%AE%E5%A4%89%E6%8F%9B
 
-                            let b_on: u8 =
-                                match num
-                                {
-                                    0 => { 0x7E }
-                                ,   1 => { 0x30 }
-                                ,   2 => { 0x6d }
-                                ,   3 => { 0x79 }
-                                ,   4 => { 0x33 }
-                                ,   5 => { 0x5b }
-                                ,   6 => { 0x5f }
-                                ,   7 => { 0x70 }
-                                ,   8 => { 0x7f }
-                                ,   9 => { 0x7b }
-                                ,   _ => { 0x00 }
-                                };
+                            let b_on: u8 = match num
+                            {
+                                0 => 0x7e,
+                                1 => 0x30,
+                                2 => 0x6d,
+                                3 => 0x79,
+                                4 => 0x33,
+                                5 => 0x5b,
+                                6 => 0x5f,
+                                7 => 0x70,
+                                8 => 0x7f,
+                                9 => 0x7b,
+                                _ => 0x00,
+                            };
 
-                            let b_mask: u8 =
-                                match m2.as_bytes()
-                                {
-                                    b"a" => { 0x1 << 6 }
-                                ,   b"b" => { 0x1 << 5 }
-                                ,   b"c" => { 0x1 << 4 }
-                                ,   b"d" => { 0x1 << 3 }
-                                ,   b"e" => { 0x1 << 2 }
-                                ,   b"f" => { 0x1 << 1 }
-                                ,   b"g" => { 0x1 << 0 }
-                                ,   _ => { 0x0u8 }
-                                };
+                            let b_mask: u8 = match m2.as_bytes()
+                            {
+                                b"a" => 0x1 << 6,
+                                b"b" => 0x1 << 5,
+                                b"c" => 0x1 << 4,
+                                b"d" => 0x1 << 3,
+                                b"e" => 0x1 << 2,
+                                b"f" => 0x1 << 1,
+                                b"g" => 0x1 << 0,
+                                _ => 0x0u8,
+                            };
 
                             buf.extend_from_slice(
                                 if b_on & b_mask != 0x00
@@ -1768,7 +1952,7 @@ fn draw_watch(
                                 else
                                 {
                                     b"hidden"
-                                }
+                                },
                             );
 
                             /*
@@ -1783,7 +1967,7 @@ fn draw_watch(
                             }
                             */
                         }
-                        else if let Some( caps ) = RE_SEGMENT_AMPM.captures( kw.as_slice() )
+                        else if let Some(caps) = RE_SEGMENT_AMPM.captures(kw.as_slice())
                         {
                             /*
                                 <g visibility="{{seg_am}}"></g>
@@ -1801,23 +1985,21 @@ fn draw_watch(
                             // debug!("{:?}", String::from_utf8( m1.as_bytes().to_vec() ) );
 
                             buf.extend_from_slice(
-                                if  is_enable &&
-                                    (
-                                        !is_pm && m1.as_bytes() == b"am"
-                                    ||  is_pm && m1.as_bytes() == b"pm"
-                                    ||  m1.as_bytes() == b"amb"
-                                    ||  m1.as_bytes() == b"pmb"
-                                    )
+                                if is_enable
+                                    && (!is_pm && m1.as_bytes() == b"am"
+                                        || is_pm && m1.as_bytes() == b"pm"
+                                        || m1.as_bytes() == b"amb"
+                                        || m1.as_bytes() == b"pmb")
                                 {
                                     b"visible"
                                 }
                                 else
                                 {
                                     b"hidden"
-                                }
+                                },
                             );
                         }
-                        else if let Some( _ ) = RE_SEGMENT_DOT.captures( kw.as_slice() )
+                        else if let Some(_) = RE_SEGMENT_DOT.captures(kw.as_slice())
                         {
                             /*
                                 <g visibility="{{seg_dot}}"></g>
@@ -1825,133 +2007,129 @@ fn draw_watch(
                                 {{seg_dot}} = "visible" or "hidden"
                             */
 
-                            let is_on =
-                                if app_info.enable_text_time_segment_dotblink
-                                {
-                                    app_info.time_disp.and_utc().timestamp_subsec_millis() < 500
-                                }
-                                else
-                                {
-                                    true
-                                }
-                                ;
+                            let is_on = if app_info.enable_text_time_segment_dotblink
+                            {
+                                app_info.time_disp.and_utc().timestamp_subsec_millis() < 500
+                            }
+                            else
+                            {
+                                true
+                            };
 
-                            buf.extend_from_slice( if is_on { b"visible" } else { b"hidden" } );
+                            buf.extend_from_slice(if is_on { b"visible" } else { b"hidden" });
                         }
                     }
-                }
+                },
             }
 
             last_match = m0.end();
         }
 
-        buf.extend_from_slice( &x[last_match..] );
+        buf.extend_from_slice(&x[last_match ..]);
 
         // render
-        let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( &buf ));
+        let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(&buf));
 
-        if let Ok( svgh ) =
-            rsvg::Loader::new()
-            .read_stream(
-                &svg_stream,
-                None::<&gtk::gio::File>,
-                None::<&gtk::gio::Cancellable>,
-            )
+        if let Ok(svgh) = rsvg::Loader::new().read_stream(
+            &svg_stream,
+            None::<&gtk::gio::File>,
+            None::<&gtk::gio::Cancellable>,
+        )
         {
-            let svg_renderer = rsvg::CairoRenderer::new( &svgh );
+            let svg_renderer = rsvg::CairoRenderer::new(&svgh);
             svg_renderer.render_document(cctx, &viewport).unwrap();
         }
     }
 
     // render sub_second
-    if      app_info.show_seconds
-        &&  app_info.enable_sub_second_handle
-        &&  image_info.svgh_sub_second_handle.is_some()
+    if app_info.show_seconds
+        && app_info.enable_sub_second_handle
+        && image_info.svgh_sub_second_handle.is_some()
     {
         // render sub_second_base
-        if let Some( svgh ) = image_info.svgh_sub_second_base.as_ref()
+        if let Some(svgh) = image_info.svgh_sub_second_base.as_ref()
         {
             let svg_renderer = rsvg::CairoRenderer::new(svgh);
             svg_renderer.render_document(cctx, &viewport).unwrap();
         }
 
         // render sub_second_handle
-        if let Some( svgh ) = image_info.svgh_sub_second_handle.as_ref()
+        if let Some(svgh) = image_info.svgh_sub_second_handle.as_ref()
         {
-            func_render_rotate( svgh, &center_sub_second, angle_sec );
+            func_render_rotate(svgh, &center_sub_second, angle_sec);
         }
 
         // render sub_second_center_circle
-        if let Some( svgh ) = image_info.svgh_sub_second_center_circle.as_ref()
+        if let Some(svgh) = image_info.svgh_sub_second_center_circle.as_ref()
         {
-            if let Some( x ) = image_info.config.enable_rotate_center_circle && x
+            if let Some(x) = image_info.config.enable_rotate_center_circle
+                && x
             {
-                func_render_rotate( svgh, &center_sub_second, angle_sec );
+                func_render_rotate(svgh, &center_sub_second, angle_sec);
             }
             else
             {
-                func_render( svgh );
+                func_render(svgh);
             }
         }
     }
 
     // render long_handle
-    if let Some( svgh ) = image_info.svgh_long_handle.as_ref()
+    if let Some(svgh) = image_info.svgh_long_handle.as_ref()
     {
-        func_render_rotate( svgh, &center, angle_min );
+        func_render_rotate(svgh, &center, angle_min);
     }
 
     // render short_handle
-    if let Some( svgh ) = image_info.svgh_short_handle.as_ref()
+    if let Some(svgh) = image_info.svgh_short_handle.as_ref()
     {
-        func_render_rotate( svgh, &center, angle_hour );
+        func_render_rotate(svgh, &center, angle_hour);
     }
 
     // render second_handle
-    if      app_info.show_seconds
+    if app_info.show_seconds
         && !app_info.enable_sub_second_handle
-        &&  image_info.svgh_second_handle.is_some()
+        && image_info.svgh_second_handle.is_some()
     {
-        if let Some( svgh ) = image_info.svgh_second_handle.as_ref()
+        if let Some(svgh) = image_info.svgh_second_handle.as_ref()
         {
-            func_render_rotate( svgh, &center, angle_sec );
+            func_render_rotate(svgh, &center, angle_sec);
         }
     }
 
     // render center_circle
-    if let Some( svgh ) = image_info.svgh_center_circle.as_ref()
+    if let Some(svgh) = image_info.svgh_center_circle.as_ref()
     {
-        if let Some( x ) = image_info.config.enable_rotate_center_circle && x
+        if let Some(x) = image_info.config.enable_rotate_center_circle
+            && x
         {
-            func_render_rotate( svgh, &center, angle_sec );
+            func_render_rotate(svgh, &center, angle_sec);
         }
         else
         {
-            func_render( svgh );
+            func_render(svgh);
         }
     }
-
 }
 
-fn make_png_image(
-    image_info : &ImageInfo, app_info: &mut AppInfo )
+fn make_png_image(image_info: &ImageInfo, app_info: &mut AppInfo)
 {
     let zoom_factor = app_info.zoom as f64 / 100.0;
 
     let sz = DVec2::new(
-        image_info.sz.x as f64 * zoom_factor
-    ,   image_info.sz.y as f64 * zoom_factor
+        image_info.sz.x as f64 * zoom_factor,
+        image_info.sz.y as f64 * zoom_factor,
     );
 
     let mut surface = ImageSurface::create(Format::ARgb32, sz.x as i32, sz.y as i32).unwrap();
 
     {
         let cctx = Context::new(&surface).unwrap();
-        draw_watch( &cctx, image_info, app_info, false );
+        draw_watch(&cctx, image_info, app_info, false);
         surface.flush();
     }
 
-    if  let Some( region ) = make_region( image_info, app_info )
+    if let Some(region) = make_region(image_info, app_info)
     {
         let h = surface.height();
         let w = surface.width();
@@ -1959,134 +2137,127 @@ fn make_png_image(
 
         match surface.data()
         {
-            Ok( mut data ) =>
+            Ok(mut data) =>
             {
-                for y in 0..h
+                for y in 0 .. h
                 {
-                    for x in 0..w
+                    for x in 0 .. w
                     {
                         if !region.contains_point(x, y)
                         {
                             let p = y * s + x * 4;
-                            data[ ( p + 0 ) as usize] = 0x00; // b
-                            data[ ( p + 1 ) as usize] = 0x00; // g
-                            data[ ( p + 2 ) as usize] = 0x00; // r
-                            data[ ( p + 3 ) as usize] = 0x00; // a
+                            data[(p + 0) as usize] = 0x00; // b
+                            data[(p + 1) as usize] = 0x00; // g
+                            data[(p + 2) as usize] = 0x00; // r
+                            data[(p + 3) as usize] = 0x00; // a
                         }
                     }
                 }
-            }
-        ,   Err( x ) =>
+            },
+            Err(x) =>
             {
-                debug!("{:?}", x )
-            }
+                debug!("{:?}", x)
+            },
         }
 
         surface.mark_dirty();
     }
 
-    match File::create(FILE_SNAPSHOTO_PNG )
+    match File::create(FILE_SNAPSHOTO_PNG)
     {
-        Ok( mut ss_file ) =>
+        Ok(mut ss_file) =>
         {
-            if let Err( x ) = surface.write_to_png(&mut ss_file )
+            if let Err(x) = surface.write_to_png(&mut ss_file)
             {
-                error!( "{:?}", x );
+                error!("{:?}", x);
             }
-        }
-    ,   Err( x ) =>
+        },
+        Err(x) =>
         {
-            error!( "{:?}", x );
-        }
+            error!("{:?}", x);
+        },
     }
 }
 
-fn make_theme_menu(
-    image_info: &Rc< RefCell< ImageInfo > >,
-    app_info: &Rc< RefCell< AppInfo > >
-) -> Menu
+fn make_theme_menu(image_info: &Rc<RefCell<ImageInfo>>, app_info: &Rc<RefCell<AppInfo>>) -> Menu
 {
     let menu = Menu::new();
 
     for ait in AppInfoTheme::iter()
     {
-        let exist: bool = app_info.borrow().theme_names.contains_key( &ait );
+        let exist: bool = app_info.borrow().theme_names.contains_key(&ait);
 
-        let name: String =
-            if let Some( entry ) = app_info.borrow().theme_names.get( &ait )
+        let name: String = if let Some(entry) = app_info.borrow().theme_names.get(&ait)
+        {
+            if let Some(name) = &entry.0
+                && let Some(desc) = &entry.1
             {
-                if let Some( name ) = &entry.0 && let Some( desc ) = &entry.1
-                {
-                    format!( "[{}] {} / {}", ait.to_string(), name, desc )
-                }
-                else if let Some( name ) = &entry.0
-                {
-                    format!( "[{}] {}", ait.to_string(), name )
-                }
-                else
-                {
-                    format!( "[{}]", ait.to_string() )
-                }
+                format!("[{}] {} / {}", ait.to_string(), name, desc)
+            }
+            else if let Some(name) = &entry.0
+            {
+                format!("[{}] {}", ait.to_string(), name)
             }
             else
             {
-                format!( "[{}]", ait.to_string() )
+                format!("[{}]", ait.to_string())
             }
-            ;
+        }
+        else
+        {
+            format!("[{}]", ait.to_string())
+        };
 
-        let menu_item = CheckMenuItem::with_label( name.as_str() );
+        let menu_item = CheckMenuItem::with_label(name.as_str());
 
-        menu_item.set_active( ait == app_info.borrow().theme );
-        menu_item.set_sensitive( exist );
+        menu_item.set_active(ait == app_info.borrow().theme);
+        menu_item.set_sensitive(exist);
 
         {
             let app_info = app_info.clone();
             let image_info = image_info.clone();
 
-            menu_item.connect_activate(
-                move |_|
+            menu_item.connect_activate(move |_| {
+                let theme_custom = app_info.borrow().theme_custom.clone();
+
+                match load_theme(ait, theme_custom)
                 {
-                    let theme_custom = app_info.borrow().theme_custom.clone();
-
-                    match load_theme( ait, theme_custom )
+                    Some(_image_info) =>
                     {
-                        Some( _image_info ) =>
-                        {
-                            let mut app_info = app_info.borrow_mut();
+                        let mut app_info = app_info.borrow_mut();
 
-                            app_info.theme = ait;
-                            // app_info.zoom = 100;
-                            app_info.zoom_update = true;
-                            app_info.theme_names.insert( ait,( _image_info.config.get_theme_name(), _image_info.config.get_theme_description() ) );
+                        app_info.theme = ait;
+                        // app_info.zoom = 100;
+                        app_info.zoom_update = true;
+                        app_info.theme_names.insert(
+                            ait,
+                            (
+                                _image_info.config.get_theme_name(),
+                                _image_info.config.get_theme_description(),
+                            ),
+                        );
 
-                            image_info.replace( _image_info );
-                        }
-                    ,   _ => {}
-                    }
+                        image_info.replace(_image_info);
+                    },
+                    _ =>
+                    {},
                 }
-            );
+            });
         }
 
-        menu.append( &menu_item );
+        menu.append(&menu_item);
     }
 
     menu
 }
 
-fn make_zoom_menu(
-    app_info: &Rc< RefCell< AppInfo > >
-) -> Menu
+fn make_zoom_menu(app_info: &Rc<RefCell<AppInfo>>) -> Menu
 {
-    static ZOOMS: LazyLock< Vec<u32> > = LazyLock::new(
-        ||
-        {
-            (30..=230).step_by(10).collect()
-        }
-    );
+    static ZOOMS: LazyLock<Vec<u32>> = LazyLock::new(|| (30 ..= 230).step_by(10).collect());
 
     let zoom = app_info.borrow().zoom;
 
-    if ZOOMS.iter().find( | &&x| { x == zoom } ).is_none()
+    if ZOOMS.iter().find(|&&x| x == zoom).is_none()
     {
         app_info.borrow_mut().zoom = 100;
     }
@@ -2095,56 +2266,51 @@ fn make_zoom_menu(
 
     for &x in ZOOMS.iter()
     {
-        let label = format!( "{}%", x );
+        let label = format!("{}%", x);
 
-        let menu_item = CheckMenuItem::with_label( label.as_str() );
+        let menu_item = CheckMenuItem::with_label(label.as_str());
 
-        menu_item.set_active( app_info.borrow().zoom == x );
+        menu_item.set_active(app_info.borrow().zoom == x);
 
         {
             let app_info = app_info.clone();
 
-            menu_item.connect_activate(
-                move |_| {
-                    let mut app_info = app_info.borrow_mut();
-                    app_info.zoom = x;
-                    app_info.zoom_update = true;
-                }
-            );
+            menu_item.connect_activate(move |_| {
+                let mut app_info = app_info.borrow_mut();
+                app_info.zoom = x;
+                app_info.zoom_update = true;
+            });
         }
 
-        menu.append( &menu_item );
+        menu.append(&menu_item);
     }
 
     menu
 }
 
-fn make_timezone_menu(
-    da: &DrawingArea,
-    app_info: &Rc< RefCell< AppInfo > >
-) -> Menu
+fn make_timezone_menu(da: &DrawingArea, app_info: &Rc<RefCell<AppInfo>>) -> Menu
 {
     // first parse
 
-    let mut dic = LinkedHashMap::< &str, Vec< &str > >::new();
+    let mut dic = LinkedHashMap::<&str, Vec<&str>>::new();
 
     for x in chrono_tz::TZ_VARIANTS
     {
         let n = x.name();
-        let p = n.split_once( "/" );
+        let p = n.split_once("/");
 
-        if let Some( ( area, city)  ) = p
+        if let Some((area, city)) = p
         {
-            if ! dic.contains_key( area )
+            if !dic.contains_key(area)
             {
-                dic.insert( area, Vec::<_>::new() );
+                dic.insert(area, Vec::<_>::new());
             }
 
-            if let Some( vec ) = dic.get_mut( area )
+            if let Some(vec) = dic.get_mut(area)
             {
-                if !( city.starts_with( "GMT" ) || city.starts_with( "UTC" ) || city.starts_with( "UCT" ) )
+                if !(city.starts_with("GMT") || city.starts_with("UTC") || city.starts_with("UCT"))
                 {
-                    vec.push( city );
+                    vec.push(city);
                 }
             }
         }
@@ -2153,123 +2319,120 @@ fn make_timezone_menu(
     let menu = Menu::new();
 
     let tz = app_info.borrow().time_zone.clone();
-    let tz = if tz == "" { String::from( "<< (Local Time) >>" ) } else { format!("<< {} >>", tz) };
+    let tz = if tz == ""
+    {
+        String::from("<< (Local Time) >>")
+    }
+    else
+    {
+        format!("<< {} >>", tz)
+    };
 
-    let menu_item_now = MenuItem::with_label( tz.as_str() );
-    menu_item_now.set_sensitive( false );
+    let menu_item_now = MenuItem::with_label(tz.as_str());
+    menu_item_now.set_sensitive(false);
 
-    menu.append( &menu_item_now );
-    menu.append( &SeparatorMenuItem::new() );
+    menu.append(&menu_item_now);
+    menu.append(&SeparatorMenuItem::new());
 
-    let menu_item_local_time = CheckMenuItem::with_label( "Local Time" );
+    let menu_item_local_time = CheckMenuItem::with_label("Local Time");
 
-    menu_item_local_time.set_active( app_info.borrow().time_zone == "" );
+    menu_item_local_time.set_active(app_info.borrow().time_zone == "");
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_local_time.connect_activate(
-            move |_| {
-                let mut app_info = app_info.borrow_mut();
-                app_info.time_zone = String::from( "" );
-                app_info.time_disp_st = None;
-                da.queue_draw();
-            }
-        );
+        menu_item_local_time.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.time_zone = String::from("");
+            app_info.time_disp_st = None;
+            da.queue_draw();
+        });
     }
 
-    menu.append( &menu_item_local_time );
+    menu.append(&menu_item_local_time);
 
-    let menu_item_utc = CheckMenuItem::with_label( "UTC" );
+    let menu_item_utc = CheckMenuItem::with_label("UTC");
 
-    menu_item_utc.set_active( app_info.borrow().time_zone == "UTC" );
+    menu_item_utc.set_active(app_info.borrow().time_zone == "UTC");
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_utc.connect_activate(
-            move |_| {
-                let mut app_info = app_info.borrow_mut();
-                app_info.time_zone = String::from( "UTC" );
-                da.queue_draw();
-            }
-        );
+        menu_item_utc.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.time_zone = String::from("UTC");
+            da.queue_draw();
+        });
     }
 
-    menu.append( &menu_item_utc );
+    menu.append(&menu_item_utc);
 
-    let menu_item_gmt = MenuItem::with_label( "Greenwich Mean Time" );
+    let menu_item_gmt = MenuItem::with_label("Greenwich Mean Time");
 
     let menu_gmt = Menu::new();
 
     for gmt_entry in [
-        "GMT-12", "GMT-11", "GMT-10"
-    ,   "GMT-9", "GMT-8", "GMT-7", "GMT-6", "GMT-5", "GMT-4", "GMT-3", "GMT-2", "GMT-1"
-    ,   "GMT"
-    ,   "GMT+1", "GMT+2", "GMT+3", "GMT+4", "GMT+5", "GMT+6", "GMT+7", "GMT+8", "GMT+9"
-    ,   "GMT+11", "GMT+12", "GMT+13", "GMT+14"
+        "GMT-12", "GMT-11", "GMT-10", "GMT-9", "GMT-8", "GMT-7", "GMT-6", "GMT-5", "GMT-4",
+        "GMT-3", "GMT-2", "GMT-1", "GMT", "GMT+1", "GMT+2", "GMT+3", "GMT+4", "GMT+5", "GMT+6",
+        "GMT+7", "GMT+8", "GMT+9", "GMT+11", "GMT+12", "GMT+13", "GMT+14",
     ]
     {
-        let menu_item_gmt_entry = CheckMenuItem::with_label( gmt_entry );
+        let menu_item_gmt_entry = CheckMenuItem::with_label(gmt_entry);
 
-        menu_item_gmt_entry.set_active( app_info.borrow().time_zone == gmt_entry );
+        menu_item_gmt_entry.set_active(app_info.borrow().time_zone == gmt_entry);
 
         {
             let da = da.clone();
             let app_info = app_info.clone();
 
-            menu_item_gmt_entry.connect_activate(
-                move |_| {
-                    let mut app_info = app_info.borrow_mut();
-                    app_info.time_zone = String::from( gmt_entry );
-                    da.queue_draw();
-                }
-            );
+            menu_item_gmt_entry.connect_activate(move |_| {
+                let mut app_info = app_info.borrow_mut();
+                app_info.time_zone = String::from(gmt_entry);
+                da.queue_draw();
+            });
         }
 
-        menu_gmt.append( &menu_item_gmt_entry );
+        menu_gmt.append(&menu_item_gmt_entry);
     }
 
-    menu_item_gmt.set_submenu( Some( &menu_gmt ) );
+    menu_item_gmt.set_submenu(Some(&menu_gmt));
 
-    menu.append( &menu_item_gmt );
-    menu.append( &SeparatorMenuItem::new() );
+    menu.append(&menu_item_gmt);
+    menu.append(&SeparatorMenuItem::new());
 
-    for ( area, cities ) in dic
+    for (area, cities) in dic
     {
         if !cities.is_empty()
         {
-            let menu_item_area = MenuItem::with_label( area );
-            let menu_area  = Menu::new();
+            let menu_item_area = MenuItem::with_label(area);
+            let menu_area = Menu::new();
 
             for city in cities
             {
-                let tz = format!("{}/{}", area, city );
+                let tz = format!("{}/{}", area, city);
 
-                let menu_item_city = CheckMenuItem::with_label( city );
+                let menu_item_city = CheckMenuItem::with_label(city);
 
-                menu_item_city.set_active( app_info.borrow().time_zone == tz );
+                menu_item_city.set_active(app_info.borrow().time_zone == tz);
 
                 {
                     let da = da.clone();
                     let app_info = app_info.clone();
-                    menu_item_city.connect_activate(
-                        move |_| {
-                            let mut app_info = app_info.borrow_mut();
-                            app_info.time_zone = tz.clone();
-                            da.queue_draw();
-                        }
-                    );
+                    menu_item_city.connect_activate(move |_| {
+                        let mut app_info = app_info.borrow_mut();
+                        app_info.time_zone = tz.clone();
+                        da.queue_draw();
+                    });
                 }
 
-                menu_area.append( &menu_item_city );
+                menu_area.append(&menu_item_city);
             }
 
-            menu_item_area.set_submenu( Some( &menu_area ) );
+            menu_item_area.set_submenu(Some(&menu_area));
 
-            menu.append( &menu_item_area );
+            menu.append(&menu_item_area);
         }
     }
 
@@ -2278,215 +2441,209 @@ fn make_timezone_menu(
 
 fn make_text_visibility_menu(
     da: &DrawingArea,
-    app_info: &Rc< RefCell< AppInfo > >,
-    image_info: &Rc< RefCell< ImageInfo > >
+    app_info: &Rc<RefCell<AppInfo>>,
+    image_info: &Rc<RefCell<ImageInfo>>,
 ) -> Menu
 {
-    let with_time_zone =
-        if let Some( x ) = image_info.borrow().config.with_text_time_zone && x { true } else { false }
-        ;
-    let with_date =
-        if let Some( x ) = image_info.borrow().config.with_text_date && x { true } else { false }
-        ;
-    let with_time =
-        if let Some( x ) = image_info.borrow().config.with_text_time && x { true } else { false }
-        ;
-    let with_segment =
-        if let Some( x ) = image_info.borrow().config.with_text_segment && x { true } else { false }
-        ;
+    let with_time_zone = if let Some(x) = image_info.borrow().config.with_text_time_zone
+        && x
+    {
+        true
+    }
+    else
+    {
+        false
+    };
+    let with_date = if let Some(x) = image_info.borrow().config.with_text_date
+        && x
+    {
+        true
+    }
+    else
+    {
+        false
+    };
+    let with_time = if let Some(x) = image_info.borrow().config.with_text_time
+        && x
+    {
+        true
+    }
+    else
+    {
+        false
+    };
+    let with_segment = if let Some(x) = image_info.borrow().config.with_text_segment
+        && x
+    {
+        true
+    }
+    else
+    {
+        false
+    };
 
     let menu = Menu::new();
 
-    let menu_item_enable_text_time_zone = CheckMenuItem::with_label( "Enable Time Zone" );
+    let menu_item_enable_text_time_zone = CheckMenuItem::with_label("Enable Time Zone");
 
-    menu_item_enable_text_time_zone.set_sensitive( with_time_zone );
-    menu_item_enable_text_time_zone.set_active( app_info.borrow().enable_text_time_zone );
-
-    {
-        let da = da.clone();
-        let app_info = app_info.clone();
-
-        menu_item_enable_text_time_zone.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.enable_text_time_zone = !app_info.enable_text_time_zone;
-                da.queue_draw();
-            }
-        );
-    }
-
-    let menu_item_enable_text_date = CheckMenuItem::with_label( "Enable Date" );
-
-    menu_item_enable_text_date.set_sensitive( with_date );
-    menu_item_enable_text_date.set_active( app_info.borrow().enable_text_date );
+    menu_item_enable_text_time_zone.set_sensitive(with_time_zone);
+    menu_item_enable_text_time_zone.set_active(app_info.borrow().enable_text_time_zone);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_enable_text_date.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.enable_text_date = !app_info.enable_text_date;
-                da.queue_draw();
-            }
-        );
+        menu_item_enable_text_time_zone.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.enable_text_time_zone = !app_info.enable_text_time_zone;
+            da.queue_draw();
+        });
     }
 
-    let menu_item_enable_text_time = CheckMenuItem::with_label( "Enable Time" );
+    let menu_item_enable_text_date = CheckMenuItem::with_label("Enable Date");
 
-    menu_item_enable_text_time.set_sensitive( with_time );
-    menu_item_enable_text_time.set_active( app_info.borrow().enable_text_time );
+    menu_item_enable_text_date.set_sensitive(with_date);
+    menu_item_enable_text_date.set_active(app_info.borrow().enable_text_date);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_enable_text_time.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.enable_text_time = !app_info.enable_text_time;
-                da.queue_draw();
-            }
-        );
+        menu_item_enable_text_date.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.enable_text_date = !app_info.enable_text_date;
+            da.queue_draw();
+        });
     }
 
-    /*
-    let menu_item_enable_text_time_ampm = CheckMenuItem::with_label( "Enable Time AM/PM" );
+    let menu_item_enable_text_time = CheckMenuItem::with_label("Enable Time");
 
-    menu_item_enable_text_time_ampm.set_active( app_info.borrow().enable_text_time_ampm );
+    menu_item_enable_text_time.set_sensitive(with_time);
+    menu_item_enable_text_time.set_active(app_info.borrow().enable_text_time);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_enable_text_time_ampm.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.enable_text_time_ampm = !app_info.enable_text_time_ampm;
-                da.queue_draw();
-            }
-        );
+        menu_item_enable_text_time.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.enable_text_time = !app_info.enable_text_time;
+            da.queue_draw();
+        });
     }
-    */
 
-    let menu_item_enable_text_time_segment = CheckMenuItem::with_label( "Enable Time Segment" );
+    let menu_item_enable_text_time_segment = CheckMenuItem::with_label("Enable Time Segment");
 
-    menu_item_enable_text_time_segment.set_sensitive( with_segment );
-    menu_item_enable_text_time_segment.set_active( app_info.borrow().enable_text_time_segment );
+    menu_item_enable_text_time_segment.set_sensitive(with_segment);
+    menu_item_enable_text_time_segment.set_active(app_info.borrow().enable_text_time_segment);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_enable_text_time_segment.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.enable_text_time_segment = !app_info.enable_text_time_segment;
-                da.queue_draw();
-            }
-        );
+        menu_item_enable_text_time_segment.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.enable_text_time_segment = !app_info.enable_text_time_segment;
+            da.queue_draw();
+        });
     }
 
-    let menu_item_enable_text_time_segment_hour12 = CheckMenuItem::with_label( "Enable Time Segment Hour 12" );
+    let menu_item_enable_text_time_segment_hour12 =
+        CheckMenuItem::with_label("Enable Time Segment Hour 12");
 
-    menu_item_enable_text_time_segment_hour12.set_sensitive( with_segment );
-    menu_item_enable_text_time_segment_hour12.set_active( app_info.borrow().enable_text_time_segment_hour12 );
+    menu_item_enable_text_time_segment_hour12.set_sensitive(with_segment);
+    menu_item_enable_text_time_segment_hour12
+        .set_active(app_info.borrow().enable_text_time_segment_hour12);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_enable_text_time_segment_hour12.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.enable_text_time_segment_hour12 = !app_info.enable_text_time_segment_hour12;
-                da.queue_draw();
-            }
-        );
+        menu_item_enable_text_time_segment_hour12.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.enable_text_time_segment_hour12 = !app_info.enable_text_time_segment_hour12;
+            da.queue_draw();
+        });
     }
 
-    let menu_item_enable_text_time_segment_dotblink = CheckMenuItem::with_label( "Enable Time Segment dot blink" );
+    let menu_item_enable_text_time_segment_dotblink =
+        CheckMenuItem::with_label("Enable Time Segment dot blink");
 
-    menu_item_enable_text_time_segment_dotblink.set_active( app_info.borrow().enable_text_time_segment_dotblink );
+    menu_item_enable_text_time_segment_dotblink
+        .set_active(app_info.borrow().enable_text_time_segment_dotblink);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_enable_text_time_segment_dotblink.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.enable_text_time_segment_dotblink = !app_info.enable_text_time_segment_dotblink;
-                da.queue_draw();
-            }
-        );
+        menu_item_enable_text_time_segment_dotblink.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.enable_text_time_segment_dotblink =
+                !app_info.enable_text_time_segment_dotblink;
+            da.queue_draw();
+        });
     }
 
-    let menu_item_text_format_date = MenuItem::with_label( "Formant Date" );
+    let menu_item_text_format_date = MenuItem::with_label("Formant Date");
 
     let menu_text_format_date = Menu::new();
 
     for x in AppInfoFormatDate::iter()
     {
-        let menu_item = CheckMenuItem::with_label( x.format_str().1 );
+        let menu_item = CheckMenuItem::with_label(x.format_str().1);
 
-        menu_item.set_active( app_info.borrow().text_format_date == x );
+        menu_item.set_active(app_info.borrow().text_format_date == x);
 
         {
             let da = da.clone();
             let app_info = app_info.clone();
 
-            menu_item.connect_activate( move |_|
-                {
-                    let mut app_info = app_info.borrow_mut();
-                    app_info.text_format_date = x;
-                    da.queue_draw();
-                }
-            );
+            menu_item.connect_activate(move |_| {
+                let mut app_info = app_info.borrow_mut();
+                app_info.text_format_date = x;
+                da.queue_draw();
+            });
         }
 
-        menu_text_format_date.append( &menu_item );
+        menu_text_format_date.append(&menu_item);
     }
 
-    menu_item_text_format_date.set_submenu( Some( &menu_text_format_date ) );
+    menu_item_text_format_date.set_submenu(Some(&menu_text_format_date));
 
-    let menu_item_text_format_time = MenuItem::with_label( "Formant Time" );
+    let menu_item_text_format_time = MenuItem::with_label("Formant Time");
 
     let menu_text_format_time = Menu::new();
 
     for x in AppInfoFormatTime::iter()
     {
-        let menu_item = CheckMenuItem::with_label( x.format_str().1 );
+        let menu_item = CheckMenuItem::with_label(x.format_str().1);
 
-        menu_item.set_active( app_info.borrow().text_format_time == x );
+        menu_item.set_active(app_info.borrow().text_format_time == x);
 
         {
             let da = da.clone();
             let app_info = app_info.clone();
 
-            menu_item.connect_activate( move |_|
-                {
-                    let mut app_info = app_info.borrow_mut();
-                    app_info.text_format_time = x;
-                    da.queue_draw();
-                }
-            );
+            menu_item.connect_activate(move |_| {
+                let mut app_info = app_info.borrow_mut();
+                app_info.text_format_time = x;
+                da.queue_draw();
+            });
         }
 
-        menu_text_format_time.append( &menu_item );
+        menu_text_format_time.append(&menu_item);
     }
 
-    menu_item_text_format_time.set_submenu( Some( &menu_text_format_time ) );
+    menu_item_text_format_time.set_submenu(Some(&menu_text_format_time));
 
-    menu.append( &menu_item_enable_text_time_zone );
-    menu.append( &menu_item_enable_text_date );
-    menu.append( &menu_item_enable_text_time );
-    menu.append( &menu_item_enable_text_time_segment );
-    menu.append( &menu_item_enable_text_time_segment_hour12 );
-    menu.append( &SeparatorMenuItem::new() );
-    menu.append( &menu_item_text_format_date );
-    menu.append( &menu_item_text_format_time );
+    menu.append(&menu_item_enable_text_time_zone);
+    menu.append(&menu_item_enable_text_date);
+    menu.append(&menu_item_enable_text_time);
+    menu.append(&menu_item_enable_text_time_segment);
+    menu.append(&menu_item_enable_text_time_segment_hour12);
+    menu.append(&SeparatorMenuItem::new());
+    menu.append(&menu_item_text_format_date);
+    menu.append(&menu_item_text_format_time);
 
     menu
 }
@@ -2494,8 +2651,8 @@ fn make_text_visibility_menu(
 fn make_popup_menu(
     window: &ApplicationWindow,
     da: &DrawingArea,
-    app_info: &Rc< RefCell< AppInfo > >,
-    image_info: &Rc< RefCell< ImageInfo > >,
+    app_info: &Rc<RefCell<AppInfo>>,
+    image_info: &Rc<RefCell<ImageInfo>>,
     logo: Option<Pixbuf>,
 ) -> Menu
 {
@@ -2504,253 +2661,256 @@ fn make_popup_menu(
 
     let menu = Menu::new();
 
-    let menu_item_pref = MenuItem::with_label( "Preferences" );
+    let menu_item_pref = MenuItem::with_label("Preferences");
 
-    let menu_item_pref_alway_on_top = CheckMenuItem::with_label( "Alway on Top" );
+    let menu_item_pref_alway_on_top = CheckMenuItem::with_label("Alway on Top");
 
-    menu_item_pref_alway_on_top.set_active( app_info.borrow().always_on_top );
+    menu_item_pref_alway_on_top.set_active(app_info.borrow().always_on_top);
 
     {
         let window = window.clone();
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_alway_on_top.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.always_on_top = !app_info.always_on_top;
-                window.set_keep_above( app_info.always_on_top );
-                da.queue_draw();
-            }
-        );
+        menu_item_pref_alway_on_top.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.always_on_top = !app_info.always_on_top;
+            window.set_keep_above(app_info.always_on_top);
+            da.queue_draw();
+        });
     }
 
-    let menu_item_pref_lock_pos = CheckMenuItem::with_label( "Lock Position" );
+    let menu_item_pref_lock_pos = CheckMenuItem::with_label("Lock Position");
 
-    menu_item_pref_lock_pos.set_active( app_info.borrow().lock_pos );
+    menu_item_pref_lock_pos.set_active(app_info.borrow().lock_pos);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_lock_pos.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.lock_pos = !app_info.lock_pos;
-                da.queue_draw();
-            }
-        );
+        menu_item_pref_lock_pos.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.lock_pos = !app_info.lock_pos;
+            da.queue_draw();
+        });
     }
 
-    let menu_item_pref_show_seconds = CheckMenuItem::with_label( "Show Seconds" );
+    let menu_item_pref_show_seconds = CheckMenuItem::with_label("Show Seconds");
 
-    menu_item_pref_show_seconds.set_sensitive( with_second_handle );
-    menu_item_pref_show_seconds.set_active( app_info.borrow().show_seconds );
+    menu_item_pref_show_seconds.set_sensitive(with_second_handle);
+    menu_item_pref_show_seconds.set_active(app_info.borrow().show_seconds);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_show_seconds.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.show_seconds = !app_info.show_seconds;
-                da.queue_draw();
-            }
-        );
+        menu_item_pref_show_seconds.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.show_seconds = !app_info.show_seconds;
+            da.queue_draw();
+        });
     }
 
-    let menu_item_pref_enable_sub_second_handle = CheckMenuItem::with_label( "Enable sub second handle" );
+    let menu_item_pref_enable_sub_second_handle =
+        CheckMenuItem::with_label("Enable sub second handle");
 
-    menu_item_pref_enable_sub_second_handle.set_sensitive( with_sub_second_handle );
-    menu_item_pref_enable_sub_second_handle.set_active( app_info.borrow().enable_sub_second_handle );
+    menu_item_pref_enable_sub_second_handle.set_sensitive(with_sub_second_handle);
+    menu_item_pref_enable_sub_second_handle.set_active(app_info.borrow().enable_sub_second_handle);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_enable_sub_second_handle.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.enable_sub_second_handle = !app_info.enable_sub_second_handle;
-                da.queue_draw();
-            }
-        );
+        menu_item_pref_enable_sub_second_handle.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.enable_sub_second_handle = !app_info.enable_sub_second_handle;
+            da.queue_draw();
+        });
     }
 
-    let menu_item_pref_enable_second_handle_smoothly  = CheckMenuItem::with_label( "Enable second handle smoothly" );
+    let menu_item_pref_enable_second_handle_smoothly =
+        CheckMenuItem::with_label("Enable second handle smoothly");
 
-    menu_item_pref_enable_second_handle_smoothly .set_active( app_info.borrow().enable_second_handle_smoothly );
+    menu_item_pref_enable_second_handle_smoothly
+        .set_active(app_info.borrow().enable_second_handle_smoothly);
 
     {
         let da = da.clone();
         let app_info = app_info.clone();
 
-        menu_item_pref_enable_second_handle_smoothly.connect_activate( move |_|
-            {
-                let mut app_info = app_info.borrow_mut();
-                app_info.enable_second_handle_smoothly  = !app_info.enable_second_handle_smoothly ;
-                da.queue_draw();
-            }
-        );
+        menu_item_pref_enable_second_handle_smoothly.connect_activate(move |_| {
+            let mut app_info = app_info.borrow_mut();
+            app_info.enable_second_handle_smoothly = !app_info.enable_second_handle_smoothly;
+            da.queue_draw();
+        });
     }
 
-    let menu_item_pref_text_visibility = MenuItem::with_label( "Text visibility" );
+    let menu_item_pref_text_visibility = MenuItem::with_label("Text visibility");
 
-    let menu_pref_text_visibility = make_text_visibility_menu( &da.clone(), &app_info.clone(), &image_info.clone() );
-    menu_item_pref_text_visibility.set_submenu( Some( &menu_pref_text_visibility ) );
+    let menu_pref_text_visibility =
+        make_text_visibility_menu(&da.clone(), &app_info.clone(), &image_info.clone());
+    menu_item_pref_text_visibility.set_submenu(Some(&menu_pref_text_visibility));
 
-    let menu_item_pref_time_zone = MenuItem::with_label( "Time Zone" );
-    let menu_item_pref_theme = MenuItem::with_label( "Theme" );
-    let menu_item_pref_zoom = MenuItem::with_label( "Zoom" );
+    let menu_item_pref_time_zone = MenuItem::with_label("Time Zone");
+    let menu_item_pref_theme = MenuItem::with_label("Theme");
+    let menu_item_pref_zoom = MenuItem::with_label("Zoom");
 
     let menu_pref = Menu::new();
 
-    menu_pref.append( &menu_item_pref_alway_on_top );
-    menu_pref.append( &menu_item_pref_lock_pos );
-    menu_pref.append( &SeparatorMenuItem::new() );
-    menu_pref.append( &menu_item_pref_show_seconds );
-    menu_pref.append( &menu_item_pref_enable_sub_second_handle );
-    menu_pref.append( &menu_item_pref_enable_second_handle_smoothly );
-    menu_pref.append( &SeparatorMenuItem::new() );
-    menu_pref.append( &menu_item_pref_text_visibility );
-    menu_pref.append( &SeparatorMenuItem::new() );
-    menu_pref.append( &menu_item_pref_time_zone );
-    menu_pref.append( &menu_item_pref_theme );
-    menu_pref.append( &menu_item_pref_zoom );
+    menu_pref.append(&menu_item_pref_alway_on_top);
+    menu_pref.append(&menu_item_pref_lock_pos);
+    menu_pref.append(&SeparatorMenuItem::new());
+    menu_pref.append(&menu_item_pref_show_seconds);
+    menu_pref.append(&menu_item_pref_enable_sub_second_handle);
+    menu_pref.append(&menu_item_pref_enable_second_handle_smoothly);
+    menu_pref.append(&SeparatorMenuItem::new());
+    menu_pref.append(&menu_item_pref_text_visibility);
+    menu_pref.append(&SeparatorMenuItem::new());
+    menu_pref.append(&menu_item_pref_time_zone);
+    menu_pref.append(&menu_item_pref_theme);
+    menu_pref.append(&menu_item_pref_zoom);
 
-    menu_item_pref.set_submenu( Some( &menu_pref ) );
+    menu_item_pref.set_submenu(Some(&menu_pref));
 
-    let menu_pref_time_zone = make_timezone_menu( &da.clone(), &app_info.clone() );
-    menu_item_pref_time_zone.set_submenu( Some( &menu_pref_time_zone ) );
+    let menu_pref_time_zone = make_timezone_menu(&da.clone(), &app_info.clone());
+    menu_item_pref_time_zone.set_submenu(Some(&menu_pref_time_zone));
 
-    let menu_pref_theme = make_theme_menu( &image_info.clone(), &app_info.clone() );
-    menu_item_pref_theme.set_submenu( Some( &menu_pref_theme ) );
+    let menu_pref_theme = make_theme_menu(&image_info.clone(), &app_info.clone());
+    menu_item_pref_theme.set_submenu(Some(&menu_pref_theme));
 
-    let menu_pref_zoom = make_zoom_menu( &app_info.clone() );
-    menu_item_pref_zoom.set_submenu( Some( &menu_pref_zoom ) );
+    let menu_pref_zoom = make_zoom_menu(&app_info.clone());
+    menu_item_pref_zoom.set_submenu(Some(&menu_pref_zoom));
 
-    let menu_item_about = MenuItem::with_label( "About" );
-
-    {
-        let window = window.clone();
-
-        menu_item_about.connect_activate(
-            move |_|
-            {
-                let about_dialog = AboutDialog::builder()
-                    .title( ABOUT_TITLE )
-                    .program_name( ABOUT_PROGRAM_NAME )
-                    .comments( ABOUT_COMMENTS )
-                    .copyright( ABOUT_COPYRIGHT_STR.as_str() )
-                    .version( ABOUT_VERSION_STR.as_str() )
-                    .website( ABOUT_WEBSITE )
-                    .authors( ABOUT_AUTHORS )
-                    .artists( ABOUT_ARTISTS )
-                    // .documenters( ABOUT_DOCUMENTS )
-                    .modal( true )
-                    .destroy_with_parent( true )
-                    .build()
-                    ;
-
-                about_dialog.set_logo( logo.as_ref() );
-                about_dialog.set_parent( &window );
-                about_dialog.show_all();
-            }
-        );
-    }
-
-    let menu_item_quit = MenuItem::with_label( "Quit" );
+    let menu_item_about = MenuItem::with_label("About");
 
     {
         let window = window.clone();
 
-        menu_item_quit.connect_activate(
-            move |_| {
-                window.close();
-            }
-        );
+        menu_item_about.connect_activate(move |_| {
+            let about_dialog = AboutDialog::builder()
+                .title(ABOUT_TITLE)
+                .program_name(ABOUT_PROGRAM_NAME)
+                .comments(ABOUT_COMMENTS)
+                .copyright(ABOUT_COPYRIGHT_STR.as_str())
+                .version(ABOUT_VERSION_STR.as_str())
+                .website(ABOUT_WEBSITE)
+                .authors(ABOUT_AUTHORS)
+                .artists(ABOUT_ARTISTS)
+                // .documenters( ABOUT_DOCUMENTS )
+                .modal(true)
+                .destroy_with_parent(true)
+                .build();
+
+            about_dialog.set_logo(logo.as_ref());
+            about_dialog.set_parent(&window);
+            about_dialog.show_all();
+        });
     }
 
-    menu.append( &menu_item_pref );
-    menu.append( &SeparatorMenuItem::new() );
+    let menu_item_quit = MenuItem::with_label("Quit");
+
+    {
+        let window = window.clone();
+
+        menu_item_quit.connect_activate(move |_| {
+            window.close();
+        });
+    }
+
+    menu.append(&menu_item_pref);
+    menu.append(&SeparatorMenuItem::new());
 
     if app_info.borrow().time_disp_force.is_some()
     {
-        let menu_item_snapshot = MenuItem::with_label( "Snapshot" );
+        let menu_item_snapshot = MenuItem::with_label("Snapshot");
 
         {
             let app_info = app_info.clone();
             let image_info = image_info.clone();
 
-            menu_item_snapshot.connect_activate(
-                move |_| {
-                    make_png_image( &image_info.borrow(), &mut app_info.borrow_mut() );
-                }
-            );
+            menu_item_snapshot.connect_activate(move |_| {
+                make_png_image(&image_info.borrow(), &mut app_info.borrow_mut());
+            });
         }
 
-        menu.append( &menu_item_snapshot );
-        menu.append( &SeparatorMenuItem::new() );
+        menu.append(&menu_item_snapshot);
+        menu.append(&SeparatorMenuItem::new());
     }
 
-    menu.append( &menu_item_about );
-    menu.append( &menu_item_quit );
+    menu.append(&menu_item_about);
+    menu.append(&menu_item_quit);
 
     menu
 }
 
-fn get_timer_interval( is_fast: bool ) -> u64
+fn get_timer_interval(is_fast: bool) -> u64
 {
-    if is_fast { UPDATE_CYCLE_FAST } else { UPDATE_CYCLE_SLOW }
+    if is_fast
+    {
+        UPDATE_CYCLE_FAST
+    }
+    else
+    {
+        UPDATE_CYCLE_SLOW
+    }
 }
-fn main() {
-
+fn main()
+{
     pretty_env_logger::init();
 
     let app_info_file = get_app_info_file();
 
     let app = Application::builder()
-        .application_id( GTK_APPLICATION_ID )
+        .application_id(GTK_APPLICATION_ID)
         .build();
 
-    let app_info = Rc::new( RefCell::new( AppInfo::new() ) );
+    let app_info = Rc::new(RefCell::new(AppInfo::new()));
 
     {
-        let file = File::open(&app_info_file );
+        let file = File::open(&app_info_file);
 
         match file
         {
-            Ok( mut file ) =>
+            Ok(mut file) =>
             {
                 let mut buf = String::new();
 
-                match file.read_to_string( &mut buf )
+                match file.read_to_string(&mut buf)
                 {
                     Ok(_) =>
                     {
-                        let app_info_load : Result< AppInfo, _> = toml::from_str( &buf );
+                        let app_info_load: Result<AppInfo, _> = toml::from_str(&buf);
 
                         match app_info_load
                         {
-                            Ok( app_info_load ) =>
+                            Ok(app_info_load) =>
                             {
-                                app_info.replace( app_info_load );
-                            }
-                        ,   Err( err ) => { error!( "{}", err ); }
+                                app_info.replace(app_info_load);
+                            },
+                            Err(err) =>
+                            {
+                                error!("{}", err);
+                            },
                         }
-                    }
-                    ,   Err( err ) => { error!( "{}", err ); }
+                    },
+                    Err(err) =>
+                    {
+                        error!("{}", err);
+                    },
                 }
-            }
-        ,   Err( err ) =>
+            },
+            Err(err) =>
             {
                 match err.kind()
                 {
-                    std::io::ErrorKind::NotFound => { /* pass */ }
-                ,   _ => { error!( "{}", err ); }
+                    std::io::ErrorKind::NotFound =>
+                    { /* pass */ },
+                    _ =>
+                    {
+                        error!("{}", err);
+                    },
                 }
-            }
+            },
         }
     }
 
@@ -2761,24 +2921,29 @@ fn main() {
         let app_info = app_info.clone();
 
         app.connect_activate(move |app| {
-
-            let image_info = Rc::new( RefCell::new( load_theme( app_info.borrow().theme, app_info.borrow().theme_custom.clone()  ).unwrap() ) );
+            let image_info = Rc::new(RefCell::new(
+                load_theme(
+                    app_info.borrow().theme,
+                    app_info.borrow().theme_custom.clone(),
+                )
+                .unwrap(),
+            ));
 
             let window = ApplicationWindow::builder()
                 .application(app)
-                .title( GTK_APPLICATION_TITLE )
+                .title(GTK_APPLICATION_TITLE)
                 .decorated(false)
-                .tooltip_markup( GTK_APPLICATION_TOOLTIP )
+                .tooltip_markup(GTK_APPLICATION_TOOLTIP)
                 .build();
 
-            window.set_keep_above( app_info.borrow().always_on_top );
+            window.set_keep_above(app_info.borrow().always_on_top);
 
-            if let Some( pos ) = app_info.borrow().window_pos
+            if let Some(pos) = app_info.borrow().window_pos
             {
-                window.move_( pos.0, pos.1 );
+                window.move_(pos.0, pos.1);
             }
 
-            let da =  DrawingArea::new();
+            let da = DrawingArea::new();
 
             {
                 let da = da.clone();
@@ -2786,14 +2951,12 @@ fn main() {
                 let image_info = image_info.clone();
                 let app_info = app_info.clone();
 
-                da.connect_draw( move | da, cr |
-                    {
-                        update_watch( &da, &mut app_info.borrow_mut() );
-                        update_region( &window, &image_info.borrow(), &mut app_info.borrow_mut() );
-                        draw_watch(  cr, &image_info.borrow(), &app_info.borrow(), false );
-                        gtk::glib::Propagation::Proceed
-                    }
-                );
+                da.connect_draw(move |da, cr| {
+                    update_watch(&da, &mut app_info.borrow_mut());
+                    update_region(&window, &image_info.borrow(), &mut app_info.borrow_mut());
+                    draw_watch(cr, &image_info.borrow(), &app_info.borrow(), false);
+                    gtk::glib::Propagation::Proceed
+                });
             }
 
             window.add(&da);
@@ -2804,51 +2967,54 @@ fn main() {
                 let image_info = image_info.clone();
                 let app_info = app_info.clone();
 
-                window.connect_button_press_event( move | window,  evt |
+                window.connect_button_press_event(move |window, evt| {
+                    // log::debug!("pressed: {:?}", evt.button() );
+
+                    let logo = load_logo();
+
+                    match evt.button()
                     {
-                        // log::debug!("pressed: {:?}", evt.button() );
-
-                        let logo = load_logo();
-
-                        match evt.button()
+                        1 =>
+                        /* left button */
                         {
-                            1 => /* left button */
+                            if !app_info.borrow().lock_pos
                             {
-                                if !app_info.borrow().lock_pos
-                                {
-                                    let btn = evt.as_ref();
-                                    window.begin_move_drag( btn.button as i32, btn.x_root as i32, btn.y_root as i32, btn.time );
-                                }
+                                let btn = evt.as_ref();
+                                window.begin_move_drag(
+                                    btn.button as i32,
+                                    btn.x_root as i32,
+                                    btn.y_root as i32,
+                                    btn.time,
+                                );
                             }
-                        ,   3 => /* right button */
-                            {
-                                let menu = make_popup_menu( &window, &da, &app_info, &image_info, logo );
+                        },
+                        3 =>
+                        /* right button */
+                        {
+                            let menu = make_popup_menu(&window, &da, &app_info, &image_info, logo);
 
-                                menu.show_all();
-                                menu.popup_at_pointer( Some( evt ) );
+                            menu.show_all();
+                            menu.popup_at_pointer(Some(evt));
 
-                                return gtk::glib::Propagation::Stop;
-                            }
-                        ,   _ => {}
-                        }
-
-                        gtk::glib::Propagation::Proceed
+                            return gtk::glib::Propagation::Stop;
+                        },
+                        _ =>
+                        {},
                     }
-                );
+
+                    gtk::glib::Propagation::Proceed
+                });
             }
 
             {
                 let app_info = app_info.clone();
 
-                window.connect_delete_event(
-                    move | window, _ |
-                    {
-                        log::debug!("connect_delete_event" );
-                        log::debug!("pos:{:?}", window.position() );
-                        app_info.borrow_mut().window_pos = Some( window.position() );
-                        gtk::glib::Propagation::Proceed
-                    }
-                );
+                window.connect_delete_event(move |window, _| {
+                    log::debug!("connect_delete_event");
+                    log::debug!("pos:{:?}", window.position());
+                    app_info.borrow_mut().window_pos = Some(window.position());
+                    gtk::glib::Propagation::Proceed
+                });
             }
 
             window.show_all();
@@ -2857,55 +3023,49 @@ fn main() {
                 let da = da.clone();
                 let app_info = app_info.clone();
 
-                app_info.borrow_mut().timer_sourceid.replace(
-                    Some(
-                        gtk::glib::source::timeout_add_local(
-                            std::time::Duration::from_millis( get_timer_interval( false ) ),
-                            move ||
-                            {
-                                da.queue_draw();
-                                gtk::glib::ControlFlow::Continue
-                            }
-                        )
-                    )
-                );
+                app_info.borrow_mut().timer_sourceid.replace(Some(
+                    gtk::glib::source::timeout_add_local(
+                        std::time::Duration::from_millis(get_timer_interval(false)),
+                        move || {
+                            da.queue_draw();
+                            gtk::glib::ControlFlow::Continue
+                        },
+                    ),
+                ));
             }
         });
     }
 
     {
-        app.connect_shutdown(
-            move | _ |
+        app.connect_shutdown(move |_| {
+            debug!("connect_shutdown");
+
+            let toml_str = toml::to_string(app_info.as_ref()).unwrap();
+            let toml_str = format!("#TOML\n\n{}", toml_str);
+
+            let file = File::create(&app_info_file);
+
+            match file
             {
-                debug!("connect_shutdown");
-
-                let toml_str = toml::to_string( app_info.as_ref() ).unwrap();
-                let toml_str = format!( "#TOML\n\n{}", toml_str );
-
-                let file = File::create(&app_info_file );
-
-                match file
+                Ok(mut file) =>
                 {
-                    Ok( mut file ) =>
+                    match file.write(toml_str.as_bytes())
                     {
-                        match file.write( toml_str.as_bytes() )
+                        Ok(_) =>
+                        {},
+                        Err(err) =>
                         {
-                            Ok(_) => {}
-                        ,   Err(err) =>
-                            {
-                                error!( "{}", err );
-                            }
-                        }
-                    },
-                    Err( err ) =>
-                    {
-                        error!( "{}", err );
+                            error!("{}", err);
+                        },
                     }
-                }
+                },
+                Err(err) =>
+                {
+                    error!("{}", err);
+                },
             }
-        );
+        });
     }
 
     app.run();
-
 }
