@@ -4,9 +4,17 @@
 # $ rustup target add aarch64-unknown-linux-gnu
 # $ rustup target list --installed
 
-GTK_URL=https://github.com/wingtk/gvsbuild/releases/download/2025.8.0/GTK3_Gvsbuild_2025.8.0_x64.zip
 
 GTK3_LIB=`realpath ./target/GTK3_Gvsbuild.x86_64-pc-windows`
+export PKG_CONFIG_LIBDIR=$GTK3_LIB/lib/pkgconfig
+export PKG_CONFIG_SYSROOT_DIR_x86_64_pc_windows_gnu=$GTK3_LIB
+export RUSTFLAGS="-L $GTK3_LIB/lib -C link-arg=-Wl,-subsystem,windows"
+
+echo $PKG_CONFIG_LIBDIR
+echo $PKG_CONFIG_SYSROOT_DIR_x86_64_pc_windows_gnu
+echo $RUSTFLAGS
+
+GTK_URL=https://github.com/wingtk/gvsbuild/releases/download/2025.8.0/GTK3_Gvsbuild_2025.8.0_x64.zip
 GTK_ZIP=`basename $GTK_URL`
 
 TARGET_EXE=target/x86_64-pc-windows-gnu/release/svgclock-rs.exe
@@ -22,15 +30,6 @@ if [ ! -d $GTK3_LIB ]; then
 else
     echo download skip
 fi
-
-export PKG_CONFIG_LIBDIR=$GTK3_LIB/lib/pkgconfig
-export PKG_CONFIG_SYSROOT_DIR_x86_64_pc_windows_gnu=$GTK3_LIB
-export RUSTFLAGS="-L $GTK3_LIB/lib -C link-arg=-Wl,-subsystem,windows"
-
-echo $PKG_CONFIG_LIBDIR
-echo $PKG_CONFIG_SYSROOT_DIR_x86_64_pc_windows_gnu
-echo $RUSTFLAGS
-
 
 # cargo clean --release --target x86_64-pc-windows-gnu
 # cargo build --release --target x86_64-pc-windows-gnu

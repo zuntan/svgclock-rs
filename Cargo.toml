@@ -36,7 +36,9 @@ librsvg = "~2.57.3"
 quick-xml = "0.38.3"
 glam = "0.30.5"
 tween = "2.1.0"
-# clap = { version = "4.5.47", features = ["derive"] }
+
+[build-dependencies]
+embed-resource = "3.0.5"
 
 [profile.release]
 # lto = false
