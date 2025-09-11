@@ -31,8 +31,9 @@ else
     echo download skip
 fi
 
-# cargo clean --release --target x86_64-pc-windows-gnu
-# cargo build --release --target x86_64-pc-windows-gnu
+cargo clean --release --target x86_64-pc-windows-gnu
+cargo build --release --target x86_64-pc-windows-gnu
+# cargo build           --target x86_64-pc-windows-gnu
 
 if [ -d $ZIP_DIR ]; then
     rm -rf $ZIP_DIR
