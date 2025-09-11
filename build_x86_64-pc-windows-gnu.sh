@@ -6,7 +6,7 @@
 
 
 GTK3_LIB=`realpath ./target/GTK3_Gvsbuild.x86_64-pc-windows`
-export PKG_CONFIG_LIBDIR=$GTK3_LIB/lib/pkgconfig
+
 export PKG_CONFIG_SYSROOT_DIR_x86_64_pc_windows_gnu=$GTK3_LIB
 export RUSTFLAGS="-L $GTK3_LIB/lib -C link-arg=-Wl,-subsystem,windows"
 
