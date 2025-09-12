@@ -57,6 +57,8 @@ Inkscape (https://inkscape.org/) を用いて、自分で時計のデザイン�
 	- windows の場合は、zipファイルを展開したディレクトリの下のtheme/clock_theme_custome.svg
 	- ubuntu の場合は、/usr/share/svgclock-rs/theme/clock_theme_custom.svg
 
+Inkspace で開くと、以下のように表示されます。
+
 ![編集](screenshot/edit_clock_theme_custom.png)
 
 - レイヤー `base` には「時計の文字盤」のデザインが含まれます。自由にデザインすることができます。
