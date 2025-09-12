@@ -1,4 +1,6 @@
-# svgclock-rs 
+[English](readme.md)
+
+# svgclock-rs
 
 SVGファイルを用いて時計を表示するデスクトップユーティリティープログラムです。
 
@@ -27,9 +29,9 @@ TzClock ( https://theknight.co.uk/ ) にインスパイアされて作成しま�
 - ユーザーが作成した Inkscape (https://inkscape.org/) を用いて作成したSVGファイルを利用することもできます。
 - このプログラムは RUST(  https://www.rust-lang.org/ ) で記述されています。またGUIライブラリとして、GTK-3( https://www.gtk.org/ )を用いています。
 	- 現在以下のプラットフォームバイナリ提供します（マルチプラットフォーム）。将来的には他のプラットフォーム用のバイナリ提供も検討します。
-		- Windows 11 
+		- Windows 11
 			- 動画 → https://www.youtube.com/watch?v=8_VTcSsL2fU
-		- Ubuntu 24.04 
+		- Ubuntu 24.04
 			- 動画 → https://www.youtube.com/watch?v=UmCPHFl7AOQ
 
 # 導入
@@ -42,7 +44,7 @@ TzClock ( https://theknight.co.uk/ ) にインスパイアされて作成しま�
 - Ubuntu 24.04
 	- ダウンロードした deb ファイルを以下のコマンドでインストールしてください。
 		- `sudo dpkg -i svgclock-rs_0.1.0-1_amd64.deb`
-	- deb ファイルには GTK-3用ランタイムは含まれていません。必要であれば別途GTK-3用ランタイムのパッケージをインストールしてください。( Ubuntu Desctop環境であれば通常は導入済みです。) 
+	- deb ファイルには GTK-3用ランタイムは含まれていません。必要であれば別途GTK-3用ランタイムのパッケージをインストールしてください。( Ubuntu Desctop環境であれば通常は導入済みです。)
 
 # 時計デザインの作成
 
@@ -77,7 +79,7 @@ Inkspace で開くと、以下のように表示されます。
 ```
 $Env:THEME_CUSTOM = "clock_theme_custom.svg"; <PATH/TO/>svgclock-rs.exe
 ```
-	
+
 - linux
 ```
 THEME_CUSTOM=clock_theme_custom.svg <PATH/TO/>svgclock-rs```
@@ -93,7 +95,7 @@ THEME_CUSTOM=clock_theme_custom.svg <PATH/TO/>svgclock-rs```
 ```
 $Env:FIX_TIME=10:15:20; $Env:THEME_CUSTOM = "clock_theme_custom.svg"; <PATH/TO/>svgclock-rs.exe
 ```
-	
+
 - linux
 ```
 FIX_TIME=10:15:20 THEME_CUSTOM=clock_theme_custom.svg <PATH/TO/>svgclock-rs```
@@ -111,10 +113,9 @@ ToDo.
 - ![テーマ７](./clock_theme_2.svg)
 - ![テーマ３](./clock_theme_3.svg)
 - ![テーマ４](./clock_theme_4.svg)
-	- ![テーマ５](./clock_theme_5.svg)
-	- ![テーマ６](./clock_theme_6.svg)
-	- ![テーマ７](./clock_theme_7.svg)
-	
+- ![テーマ５](./clock_theme_5.svg)
+- ![テーマ６](./clock_theme_6.svg)
+- ![テーマ７](./clock_theme_7.svg)
 
 
 # 謝辞
