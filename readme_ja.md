@@ -50,14 +50,54 @@ Inkscape (https://inkscape.org/) を用いて、自分で時計のデザイン�
 
 ## シンプルなデザインを用いた説明
 
-[テーマシンプル](./clock_theme_custom.svg)をダウンロードして、Inkscapeで開いてください。
-![テーマシンプル](./clock_theme_custom.svg)
-## 細い説明
+[テーマシンプル](./clock_theme_custom.svg)を、Inkscapeで開いてください。
 
-ToDo.
+![テーマシンプル](./clock_theme_custom.svg)
+- このファイルは、パッケージにも含まれます。
+	- windows の場合は、zipファイルを展開したディレクトリの下のtheme/clock_theme_custome.svg
+	- ubuntu の場合は、/usr/share/svgclock-rs/theme/clock_theme_custom.svg
+
+![編集](screenshot/edit_clock_theme_custom.png)
+
+- レイヤー `base` には「時計の文字盤」のデザインが含まれます。自由にデザインすることができます。
+- レイヤー `long_handle` には「時計の長針」のデザインが含まれます。自由にデザインすることができます。１２時を指すようにします。
+- レイヤー `short_handle` には「時計の短針」のデザインが含まれます。自由にデザインすることができます。１２時を指すようにします。
+- レイヤー `second_handle` には「時計の秒針」のデザインが含まれます。自由にデザインすることができます。１２時を指すようにします。
+- レイヤー `center_circle` には「針の回転中心」のデザインが含まれます。必ず一つの円または楕円を含む必要があります。長針、短針、秒針は、この円の中心を基準に回転します。
+- レイヤー `center_circle` にはデザインの設定が文字で含まれます。この¥レイヤに含まれるテキストに設定される文字を用いて、デザインの名前などを指定することができます。このレイヤーは描画されません。
 
 ## 作成したデザインをsvgclock-rsに適用する
 
+
+コマンドラインから環境変数 THEME_CUSTOM を指定してプログラムを実行します。
+
+- windows (PowerShell)
+```
+$Env:THEME_CUSTOM = "clock_theme_custom.svg"; <PATH/TO/>svgclock-rs.exe
+```
+	
+- linux
+```
+THEME_CUSTOM=clock_theme_custom.svg <PATH/TO/>svgclock-rs```
+```
+
+`<PATH/TO/>`の部分は必要に合わせて指定してください。
+
+プログラムが起動したら、右クリックメニュから、`Preferences -> Theme -> [CUSTOM]` を選択しすると、作成したデザインが表示されます。
+
+また時計の時刻を固定してデザインを確認したい場合は、環境変数 `FIX_TIME`を指定します。
+
+- windows (PowerShell)
+```
+$Env:FIX_TIME=10:15:20; $Env:THEME_CUSTOM = "clock_theme_custom.svg"; <PATH/TO/>svgclock-rs.exe
+```
+	
+- linux
+```
+FIX_TIME=10:15:20 THEME_CUSTOM=clock_theme_custom.svg <PATH/TO/>svgclock-rs```
+```
+
+## SVG ファイルの細い説明
 
 ToDo.
 
