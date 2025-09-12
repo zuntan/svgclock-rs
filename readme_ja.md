@@ -22,7 +22,7 @@ TzClock ( https://theknight.co.uk/ ) にインスパイアされて作成しま�
 		-  ![秒針文字盤なし](screenshot/clock_theme_5.png)
 	- モノトーンのデザイン
 		-  ![秒針文字盤なし](screenshot/clock_theme_6.png)
-	- 砂浜のデザイン（絵画の様です）
+	- 砂浜のデザイン（絵画の様です。画像は https://min-chi.material.jp/ から頂きました）
 		-  ![秒針文字盤なし](screenshot/clock_theme_7.png)
 - ユーザーが作成した Inkscape (https://inkscape.org/) を用いて作成したSVGファイルを利用することもできます。
 - このプログラムは RUST(  https://www.rust-lang.org/ ) で記述されています。またGUIライブラリとして、GTK-3( https://www.gtk.org/ )を用いています。
@@ -66,7 +66,7 @@ Inkspace で開くと、以下のように表示されます。
 - レイヤー `short_handle` には「時計の短針」のデザインが含まれます。自由にデザインすることができます。１２時を指すようにします。
 - レイヤー `second_handle` には「時計の秒針」のデザインが含まれます。自由にデザインすることができます。１２時を指すようにします。
 - レイヤー `center_circle` には「針の回転中心」のデザインが含まれます。必ず一つの円または楕円を含む必要があります。長針、短針、秒針は、この円の中心を基準に回転します。
-- レイヤー `center_circle` にはデザインの設定が文字で含まれます。この¥レイヤに含まれるテキストに設定される文字を用いて、デザインの名前などを指定することができます。このレイヤーは描画されません。
+- レイヤー `center_circle` にはデザインの設定が文字で含まれます。この¥レイヤに含まれるテキストに設定される文字を用いて、デザインの名前などを指定することができます。このレイヤーは描画されません。画像は https://min-chi.material.jp/ か
 
 ## 作成したデザインをsvgclock-rsに適用する
 
@@ -119,4 +119,6 @@ ToDo.
 
 # 謝辞
 
-TzClock ( https://theknight.co.uk/ )の作者に感謝します。
+インスパイアを受けた、TzClock ( https://theknight.co.uk/ )の作者に感謝します。
+
+画像を頂いた、「みんちりえ」 https://min-chi.material.jp/ の画像作者に感謝します。
