@@ -51,13 +51,13 @@ const ENV_KEY_FIX_TIME: &str = "FIX_TIME";
 const ENABLE_FILE_INCLUDE: bool = true;
 
 const INCLUDE_BYTES_LOGO_PNG: &'static [u8] = include_bytes!("../logo128.png");
-const INCLUDE_BYTES_CLOCL_THEME_1_SVG: &'static [u8] = include_bytes!("../clock_theme_1.svg");
-const INCLUDE_BYTES_CLOCL_THEME_2_SVG: &'static [u8] = include_bytes!("../clock_theme_2.svg");
-const INCLUDE_BYTES_CLOCL_THEME_3_SVG: &'static [u8] = include_bytes!("../clock_theme_3.svg");
-const INCLUDE_BYTES_CLOCL_THEME_4_SVG: &'static [u8] = include_bytes!("../clock_theme_4.svg");
-const INCLUDE_BYTES_CLOCL_THEME_5_SVG: &'static [u8] = include_bytes!("../clock_theme_5.svg");
-const INCLUDE_BYTES_CLOCL_THEME_6_SVG: &'static [u8] = include_bytes!("../clock_theme_6.svg");
-const INCLUDE_BYTES_CLOCL_THEME_7_SVG: &'static [u8] = include_bytes!("../clock_theme_7.svg");
+const INCLUDE_BYTES_CLOCL_THEME_1_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_1.svg");
+const INCLUDE_BYTES_CLOCL_THEME_2_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_2.svg");
+const INCLUDE_BYTES_CLOCL_THEME_3_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_3.svg");
+const INCLUDE_BYTES_CLOCL_THEME_4_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_4.svg");
+const INCLUDE_BYTES_CLOCL_THEME_5_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_5.svg");
+const INCLUDE_BYTES_CLOCL_THEME_6_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_6.svg");
+const INCLUDE_BYTES_CLOCL_THEME_7_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_7.svg");
 
 const FILE_LOGO_PNG: &str = "logo128.png";
 const FILE_CLOCL_THEME_1_SVG: &str = "clock_theme_1.svg";
