@@ -3,8 +3,8 @@
 
 <svg
    width="256"
-   height="350"
-   viewBox="0 0 256 350"
+   height="256"
+   viewBox="0 0 256 256"
    version="1.1"
    id="svg5"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
@@ -25,7 +25,7 @@
      inkscape:document-units="px"
      showgrid="false"
      inkscape:zoom="1.829812"
-     inkscape:cx="193.4625"
+     inkscape:cx="74.051323"
      inkscape:cy="137.17256"
      inkscape:window-width="1722"
      inkscape:window-height="1063"
@@ -36,9 +36,9 @@
   <defs
      id="defs2">
     <rect
-       x="17.000571"
+       x="17.00057"
        y="-56.069336"
-       width="30.303866"
+       width="30.303865"
        height="23.338923"
        id="rect2572" />
     <rect
@@ -105,7 +105,7 @@
        transform="matrix(5.4663188,0,0,5.4663188,24.357911,307.70087)"><tspan
          x="17"
          y="-52.638388"
-         id="tspan3423">12</tspan></text>
+         id="tspan4005">12</tspan></text>
     <text
        xml:space="preserve"
        id="text2570-5"
@@ -113,7 +113,7 @@
        transform="matrix(5.4663188,0,0,5.4663188,29.771255,537.57954)"><tspan
          x="17"
          y="-52.638388"
-         id="tspan3425">6</tspan></text>
+         id="tspan4007">6</tspan></text>
     <text
        xml:space="preserve"
        id="text2570-5-4"
@@ -121,7 +121,7 @@
        transform="matrix(5.4663188,0,0,5.4663188,145.14458,422.57954)"><tspan
          x="17"
          y="-52.638388"
-         id="tspan3427">3</tspan></text>
+         id="tspan4009">3</tspan></text>
     <text
        xml:space="preserve"
        id="text2570-5-4-7"
@@ -129,7 +129,7 @@
        transform="matrix(5.4663188,0,0,5.4663188,-85.014086,422.57955)"><tspan
          x="17"
          y="-52.638388"
-         id="tspan3429">9</tspan></text>
+         id="tspan4011">9</tspan></text>
     <circle
        style="fill:#000080;fill-opacity:0.999903;stroke-width:1.28504;stroke-linecap:round"
        id="path2696"
@@ -250,14 +250,14 @@
        transform="matrix(1.5676044,0,0,1.4684323,-21.884114,-158.21947)"><tspan
          x="19.757812"
          y="291.03949"
-         id="tspan3431">#toml
+         id="tspan4013">#toml
 </tspan><tspan
          x="19.757812"
          y="300.92605"
-         id="tspan3433">theme_name = &quot;Custom exsample&quot;
+         id="tspan4015">theme_name = &quot;Custom exsample&quot;
 </tspan><tspan
          x="19.757812"
          y="310.81262"
-         id="tspan3435">theme_description = &quot;&quot;</tspan></text>
+         id="tspan4017">theme_description = &quot;&quot;</tspan></text>
   </g>
 </svg>

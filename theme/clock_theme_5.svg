@@ -3,8 +3,8 @@
 
 <svg
    width="256"
-   height="256"
-   viewBox="0 0 256 256"
+   height="100"
+   viewBox="0 0 256 100"
    version="1.1"
    id="svg5"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
@@ -24,9 +24,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      showgrid="false"
-     inkscape:zoom="5.1754899"
-     inkscape:cx="123.56318"
-     inkscape:cy="53.135066"
+     inkscape:zoom="3.659624"
+     inkscape:cx="133.62028"
+     inkscape:cy="28.691472"
      inkscape:window-width="1965"
      inkscape:window-height="1211"
      inkscape:window-x="512"
@@ -38,7 +38,7 @@
     <rect
        x="15.102713"
        y="125.01543"
-       width="150.53501"
+       width="150.535"
        height="108.01816"
        id="rect4618" />
   </defs>
@@ -87,14 +87,14 @@
        style="stroke-width:1.25147">
       <text
          xml:space="preserve"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:7.99999994px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;white-space:pre;inline-size:98.7293;display:inline;fill:#00ff00;fill-opacity:0.999903;stroke:#000000;stroke-width:0.187721;stroke-linecap:round;stroke-dasharray:none"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:8px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;text-anchor:start;white-space:pre;inline-size:98.7293;display:inline;fill:#00ff00;fill-opacity:0.999903;stroke:#000000;stroke-width:0.187721;stroke-linecap:round;stroke-dasharray:none"
          x="66.386314"
          y="-31.636047"
          id="text6081-3-3"
          transform="scale(1.1277966,0.88668471)"><tspan
            x="66.386314"
            y="-31.636047"
-           id="tspan2058">{{time_zone}}</tspan></text>
+           id="tspan2740">{{time_zone}}</tspan></text>
     </g>
     <g
        id="g5340"
@@ -573,7 +573,7 @@
      inkscape:label="long_handle">
     <path
        sodipodi:type="star"
-       style="fill:#00ff00;fill-opacity:0.999903;stroke:#000000;stroke-width:0.24382409;stroke-linecap:round;stroke-dasharray:none"
+       style="fill:#00ff00;fill-opacity:0.999903;stroke:#000000;stroke-width:0.243824;stroke-linecap:round;stroke-dasharray:none"
        id="path717-7"
        inkscape:flatsided="true"
        sodipodi:sides="3"
@@ -665,18 +665,18 @@
        transform="matrix(2.4910118,0,0,2.8014271,-22.797843,-233.44508)"><tspan
          x="15.103516"
          y="131.1027"
-         id="tspan2060">theme_name = &quot;Green&quot;
+         id="tspan2742">theme_name = &quot;Green&quot;
 </tspan><tspan
          x="15.103516"
          y="139.24984"
-         id="tspan2062">theme_description = &quot;With digit.&quot;
+         id="tspan2744">theme_description = &quot;With digit.&quot;
 </tspan><tspan
          x="15.103516"
          y="147.39698"
-         id="tspan2064">with_text_time_zone = true
+         id="tspan2746">with_text_time_zone = true
 </tspan><tspan
          x="15.103516"
          y="155.54412"
-         id="tspan2066">with_text_segment = true</tspan></text>
+         id="tspan2748">with_text_segment = true</tspan></text>
   </g>
 </svg>

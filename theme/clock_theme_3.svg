@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="300"
-   height="400"
-   viewBox="0 0 79.374998 105.83333"
+   width="251"
+   height="345"
+   viewBox="0 0 66.410416 91.281247"
    version="1.1"
    id="svg5"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
@@ -28,15 +28,15 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      showgrid="false"
-     inkscape:zoom="0.64693625"
-     inkscape:cx="-523.23548"
-     inkscape:cy="365.56925"
+     inkscape:zoom="1.829812"
+     inkscape:cx="61.754977"
+     inkscape:cy="137.44581"
      inkscape:window-width="1965"
      inkscape:window-height="1028"
      inkscape:window-x="223"
      inkscape:window-y="217"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer5" />
+     inkscape:current-layer="layer1" />
   <defs
      id="defs2">
     <linearGradient
@@ -1116,18 +1116,32 @@
        y="102.99798"
        id="text467"><tspan
          sodipodi:role="line"
-         id="tspan2088">#toml</tspan><tspan
+         id="tspan2088"
+         x="2.1767573"
+         y="102.99798">#toml</tspan><tspan
          sodipodi:role="line"
-         id="tspan2090">theme_name = &quot;Modern&quot;</tspan><tspan
+         id="tspan2090"
+         x="2.1767573"
+         y="109.6414">theme_name = &quot;Modern&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan2092">theme_description = &quot;With digit.&quot;</tspan><tspan
+         id="tspan2092"
+         x="2.1767573"
+         y="116.28483">theme_description = &quot;With digit.&quot;</tspan><tspan
          sodipodi:role="line"
-         id="tspan2094">with_text_time_zone = false</tspan><tspan
+         id="tspan2094"
+         x="2.1767573"
+         y="122.92825">with_text_time_zone = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan2096">with_text_date = false</tspan><tspan
+         id="tspan2096"
+         x="2.1767573"
+         y="129.57167">with_text_date = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan2098">with_text_time = false</tspan><tspan
+         id="tspan2098"
+         x="2.1767573"
+         y="136.2151">with_text_time = false</tspan><tspan
          sodipodi:role="line"
-         id="tspan2100">with_text_segment = true</tspan></text>
+         id="tspan2100"
+         x="2.1767573"
+         y="142.85852">with_text_segment = true</tspan></text>
   </g>
 </svg>
