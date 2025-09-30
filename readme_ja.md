@@ -36,7 +36,7 @@ TzClock ( https://theknight.co.uk/ ) にインスパイアされて作成しま�
 
 # 導入
 
-[リリースページ]( https://github.com/zuntan/svgclock-rs/releases)から最新のバイナリをダウンロードしてください。
+[リリースペちージ]( https://github.com/zuntan/svgclock-rs/releases)から最新のバイナリをダウンロードしてください。
 
 - Windows
 	- ダウンロードした zip ファイルを展開して、中に含まれる svgclock-rs.exe を起動してください。

@@ -58,6 +58,7 @@ const INCLUDE_BYTES_CLOCL_THEME_4_SVG: &'static [u8] = include_bytes!("../theme/
 const INCLUDE_BYTES_CLOCL_THEME_5_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_5.svg");
 const INCLUDE_BYTES_CLOCL_THEME_6_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_6.svg");
 const INCLUDE_BYTES_CLOCL_THEME_7_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_7.svg");
+const INCLUDE_BYTES_CLOCL_THEME_8_SVG: &'static [u8] = include_bytes!("../theme/clock_theme_8.svg");
 
 const FILE_LOGO_PNG: &str = "logo128.png";
 const FILE_CLOCL_THEME_1_SVG: &str = "clock_theme_1.svg";
@@ -67,6 +68,7 @@ const FILE_CLOCL_THEME_4_SVG: &str = "clock_theme_4.svg";
 const FILE_CLOCL_THEME_5_SVG: &str = "clock_theme_5.svg";
 const FILE_CLOCL_THEME_6_SVG: &str = "clock_theme_6.svg";
 const FILE_CLOCL_THEME_7_SVG: &str = "clock_theme_7.svg";
+const FILE_CLOCL_THEME_8_SVG: &str = "clock_theme_8.svg";
 
 const UPDATE_CYCLE_SLOW: u64 = 100;
 const UPDATE_CYCLE_FAST: u64 = 25;
@@ -919,6 +921,7 @@ fn load_theme(theme: AppInfoTheme, theme_custom: Option<String>) -> Option<Image
                     AppInfoTheme::Theme5 => Some(INCLUDE_BYTES_CLOCL_THEME_5_SVG.to_vec()),
                     AppInfoTheme::Theme6 => Some(INCLUDE_BYTES_CLOCL_THEME_6_SVG.to_vec()),
                     AppInfoTheme::Theme7 => Some(INCLUDE_BYTES_CLOCL_THEME_7_SVG.to_vec()),
+                    AppInfoTheme::Theme8 => Some(INCLUDE_BYTES_CLOCL_THEME_8_SVG.to_vec()),
                     _ => None,
                 }
             }
@@ -943,6 +946,7 @@ fn load_theme(theme: AppInfoTheme, theme_custom: Option<String>) -> Option<Image
                     AppInfoTheme::Theme5 => FILE_CLOCL_THEME_5_SVG,
                     AppInfoTheme::Theme6 => FILE_CLOCL_THEME_6_SVG,
                     AppInfoTheme::Theme7 => FILE_CLOCL_THEME_7_SVG,
+                    AppInfoTheme::Theme8 => FILE_CLOCL_THEME_8_SVG,
                     _ => "",
                 };
 
@@ -1184,6 +1188,7 @@ enum AppInfoTheme
     Theme5,
     Theme6,
     Theme7,
+    Theme8,
     Custom,
 }
 
@@ -2088,7 +2093,7 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
 
     // render second_handle
     if app_info.show_seconds
-        && !app_info.enable_sub_second_handle
+        && ( !app_info.enable_sub_second_handle || image_info.svgh_sub_second_handle.is_none() )
         && image_info.svgh_second_handle.is_some()
     {
         if let Some(svgh) = image_info.svgh_second_handle.as_ref()
