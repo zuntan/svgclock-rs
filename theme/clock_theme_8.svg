@@ -33,7 +33,7 @@
      inkscape:window-x="196"
      inkscape:window-y="142"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer10" />
+     inkscape:current-layer="layer1" />
   <defs
      id="defs2">
     <linearGradient
@@ -141,14 +141,14 @@
        id="TriangleStart-0"
        refX="2"
        refY="0"
-       orient="auto-start-reverse"
        inkscape:stockid="TriangleStart"
        markerWidth="5.3244081"
        markerHeight="6.155385"
        viewBox="0 0 5.3244081 6.1553851"
        inkscape:isstock="true"
        inkscape:collect="always"
-       preserveAspectRatio="xMidYMid">
+       preserveAspectRatio="xMidYMid"
+       orient="150">
       <path
          transform="scale(0.5)"
          style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
@@ -160,7 +160,7 @@
        id="TriangleStart-0-3"
        refX="2"
        refY="0"
-       orient="auto-start-reverse"
+       orient="150.00"
        inkscape:stockid="TriangleStart"
        markerWidth="5.3244081"
        markerHeight="6.155385"

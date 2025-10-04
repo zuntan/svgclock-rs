@@ -14,7 +14,7 @@ Inspired by TzClock (https://theknight.co.uk/).
         - ![Without Second Hand Dial](screenshot/clock_theme_1_a.png)
         - ![With Second Hand Dial](screenshot/clock_theme_1_b.png)
     - Simple Square Design
-		- ![Without second hand dial](screenshot/clock_theme_2_a.png)
+		- ![Without second hand dial](screenshot/clock_theme_2_a.png)config
         - ![With second hand dial](screenshot/clock_theme_2_b.png)
     - Modern design (includes digital display)
         -  ![Without second hand dial](screenshot/clock_theme_3.png)
@@ -68,7 +68,7 @@ When opened in Inkscape, it will appear as follows:
 - Layer `short_handle` contains the design for the “short hand” of the clock. You can design it freely. Position it to point at 12 o'clock.
 - Layer `second_handle` contains the design for the “second hand” of the clock. You can design it freely. Position it to point at 12 o'clock.
 - Layer `center_circle` contains the design for the “rotation center of the hands.” It must contain at least one circle or ellipse. The hour hand, minute hand, and second hand rotate around the center of this circle.
-- Layer `center_circle` contains design settings specified as text. You can use the characters set in the text contained in this layer to specify the design name, etc. This layer is not drawn. Images are available at https://min-chi.material.jp/ or
+- Layer `config` contains design settings specified as text. You can use the characters set in the text contained in this layer to specify the design name, etc. This layer is not drawn. 
 
 ## Applying Your Design to svgclock-rs
 

@@ -36,7 +36,7 @@ TzClock ( https://theknight.co.uk/ ) にインスパイアされて作成しま�
 
 # 導入
 
-[リリースペちージ]( https://github.com/zuntan/svgclock-rs/releases)から最新のバイナリをダウンロードしてください。
+[リリースぺージ]( https://github.com/zuntan/svgclock-rs/releases)から最新のバイナリをダウンロードしてください。
 
 - Windows
 	- ダウンロードした zip ファイルを展開して、中に含まれる svgclock-rs.exe を起動してください。
@@ -52,7 +52,7 @@ Inkscape (https://inkscape.org/) を用いて、自分で時計のデザイン�
 
 ## シンプルなデザインを用いた説明
 
-[テーマシンプル](./clock_theme_custom.svg)を、Inkscapeで開いてください。
+[テーマシンプル](./theme/clock_theme_custom.svg)を、Inkscapeで開いてください。
 
 ![テーマシンプル](./clock_theme_custom.svg)
 - このファイルは、パッケージにも含まれます。
@@ -68,7 +68,7 @@ Inkspace で開くと、以下のように表示されます。
 - レイヤー `short_handle` には「時計の短針」のデザインが含まれます。自由にデザインすることができます。１２時を指すようにします。
 - レイヤー `second_handle` には「時計の秒針」のデザインが含まれます。自由にデザインすることができます。１２時を指すようにします。
 - レイヤー `center_circle` には「針の回転中心」のデザインが含まれます。必ず一つの円または楕円を含む必要があります。長針、短針、秒針は、この円の中心を基準に回転します。
-- レイヤー `center_circle` にはデザインの設定が文字で含まれます。この¥レイヤに含まれるテキストに設定される文字を用いて、デザインの名前などを指定することができます。このレイヤーは描画されません。画像は https://min-chi.material.jp/ か
+- レイヤー `config` にはデザインの設定が文字で含まれます。このレイヤーに含まれるテキストに設定される文字を用いて、デザインの名前などを指定することができます。このレイヤーは描画されません。
 
 ## 作成したデザインをsvgclock-rsに適用する
 
@@ -109,13 +109,13 @@ ToDo.
 
 以下の SVG ファイルをInkscapeで開いて参考にしてください。
 
-- ![テーマ１](./clock_theme_1.svg)
-- ![テーマ７](./clock_theme_2.svg)
-- ![テーマ３](./clock_theme_3.svg)
-- ![テーマ４](./clock_theme_4.svg)
-- ![テーマ５](./clock_theme_5.svg)
-- ![テーマ６](./clock_theme_6.svg)
-- ![テーマ７](./clock_theme_7.svg)
+- ![テーマ１](./theme/clock_theme_1.svg)
+- ![テーマ７](./theme/clock_theme_2.svg)
+- ![テーマ３](./theme/clock_theme_3.svg)
+- ![テーマ４](./theme/clock_theme_4.svg)
+- ![テーマ５](./theme/clock_theme_5.svg)
+- ![テーマ６](./theme/clock_theme_6.svg)
+- ![テーマ７](./theme/clock_theme_7.svg)
 
 
 # 謝辞
