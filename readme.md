@@ -52,9 +52,9 @@ You can create your own clock designs using Inkscape (https://inkscape.org/).
 
 ## Explanation Using a Simple Design
 
-Open [Simple Theme](./clock_theme_custom.svg) in Inkscape.
+Open [Simple Theme](./theme/clock_theme_custom.svg) in Inkscape.
 
-![Simple Theme](./clock_theme_custom.svg)
+![Simple Theme](./theme/clock_theme_custom.svg)
 - This file is also included in the package.
     - For Windows: theme/clock_theme_custom.svg in the directory where you extracted the zip file
 	- For Ubuntu: /usr/share/svgclock-rs/theme/clock_theme_custom.svg
@@ -108,13 +108,13 @@ ToDo.
 
 Open the following SVG files in Inkscape for reference.
 
-- ![Theme 1](./clock_theme_1.svg)
-- ![Theme 2](./clock_theme_2.svg)
-- ![Theme 3](./clock_theme_3.svg)
-- ![Theme 4](./clock_theme_4.svg)
-- ![Theme 5](./clock_theme_5.svg)
- - ![Theme 6](./clock_theme_6.svg)
-- ![Theme 7](./clock_theme_7.svg)
+- ![Theme 1](./theme/clock_theme_1.svg)
+- ![Theme 2](./theme/clock_theme_2.svg)
+- ![Theme 3](./theme/clock_theme_3.svg)
+- ![Theme 4](./theme/clock_theme_4.svg)
+- ![Theme 5](./theme/clock_theme_5.svg)
+ - ![Theme 6](./theme/clock_theme_6.svg)
+- ![Theme 7](./theme/clock_theme_7.svg)
 
 
 # Acknowledgments
