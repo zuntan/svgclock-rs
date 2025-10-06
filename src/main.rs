@@ -2079,16 +2079,16 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
         }
     }
 
-    // render long_handle
-    if let Some(svgh) = image_info.svgh_long_handle.as_ref()
-    {
-        func_render_rotate(svgh, &center, angle_min);
-    }
-
     // render short_handle
     if let Some(svgh) = image_info.svgh_short_handle.as_ref()
     {
         func_render_rotate(svgh, &center, angle_hour);
+    }
+
+    // render long_handle
+    if let Some(svgh) = image_info.svgh_long_handle.as_ref()
+    {
+        func_render_rotate(svgh, &center, angle_min);
     }
 
     // render second_handle

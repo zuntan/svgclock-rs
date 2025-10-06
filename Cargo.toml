@@ -1,6 +1,6 @@
 [package]
 name = "svgclock-rs"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 
 license = "MIT OR Apache-2.0"
@@ -65,5 +65,5 @@ assets = [
     ["svgclock-rs.desktop",         "usr/share/applications/", "644"],
     ["logo128.png",                 "usr/share/icons/hicolor/128x128/apps/svgclock-rs.png", "644"],
     ["logo48.png",                  "usr/share/icons/hicolor/48x48/apps/svgclock-rs.png", "644"],
-    ["clock_theme_*svg",            "usr/share/svgclock-rs/theme/", "644"],
+    ["theme/clock_theme_*svg",      "usr/share/svgclock-rs/theme/", "644"],
 ]
