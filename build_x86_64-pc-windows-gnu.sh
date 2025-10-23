@@ -8,6 +8,7 @@
 GTK3_LIB=`realpath ./target/GTK3_Gvsbuild.x86_64-pc-windows`
 
 export PKG_CONFIG_SYSROOT_DIR_x86_64_pc_windows_gnu=$GTK3_LIB
+export PKG_CONFIG_PATH=$GTK3_LIB/lib/pkgconfig
 export RUSTFLAGS="-L $GTK3_LIB/lib -C link-arg=-Wl,-subsystem,windows"
 
 echo $PKG_CONFIG_LIBDIR
@@ -42,7 +43,7 @@ fi
 mkdir $ZIP_DIR
 mkdir $ZIP_DIR/theme
 
-cp clock_theme*svg $ZIP_DIR/theme
+cp theme/clock_theme*svg $ZIP_DIR/theme
 
 DLL_AND_EXE="
 gspawn-win64-helper.exe
@@ -74,10 +75,11 @@ pcre2-8-0.dll
 pixman-1-0.dll
 tiff.dll
 xml2-16.dll
+zlib1.dll
 "
 
 cp $TARGET_EXE $ZIP_DIR
 ( cd $GTK3_LIB/bin && tar c $DLL_AND_EXE ) | ( cd $ZIP_DIR && tar xv )
 echo "xxx" $ZIP_FILE
 echo `realpath --relative-base=$ZIP_TARGET $ZIP_DIR`
-( cd $ZIP_TARGET && zip $ZIP_FILE `realpath --relative-base=$ZIP_TARGET $ZIP_DIR`/* )
+( cd $ZIP_TARGET && zip $ZIP_FILE `realpath --relative-base=$ZIP_TARGET $ZIP_DIR`/* -r )
