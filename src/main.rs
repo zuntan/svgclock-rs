@@ -45,7 +45,8 @@ use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike, Utc
 
 use linked_hash_map::LinkedHashMap;
 
-mod minitemplate;
+use svgclock_rs::minitemplate::*;
+
 
 const ENV_KEY_THEME_CUSTOM: &str = "THEME_CUSTOM";
 const ENV_KEY_FIX_TIME: &str = "FIX_TIME";
@@ -819,7 +820,6 @@ struct ImageInfo
     viewbox_sz: DVec2,
 
     bytes_base:                     Option<Vec<u8>>,
-    bytes_base_text:                Option<Vec<u8>>,
     bytes_long_handle:              Option<Vec<u8>>,
     bytes_short_handle:             Option<Vec<u8>>,
     bytes_second_handle:            Option<Vec<u8>>,
@@ -837,6 +837,8 @@ struct ImageInfo
     svgh_sub_second_handle:        Option<SvgHandle>,
     svgh_sub_second_center_circle: Option<SvgHandle>,
 
+    template_base_text:             Option<Template>,
+
     center:            DVec2,
     center_sub_second: DVec2,
 
@@ -853,7 +855,6 @@ impl ImageInfo
             viewbox_sz: DVec2::ZERO,
 
             bytes_base:                     None,
-            bytes_base_text:                None,
             bytes_long_handle:              None,
             bytes_short_handle:             None,
             bytes_second_handle:            None,
@@ -870,6 +871,8 @@ impl ImageInfo
             svgh_sub_second_base:          None,
             svgh_sub_second_handle:        None,
             svgh_sub_second_center_circle: None,
+
+            template_base_text:             None,
 
             center:            DVec2::ZERO,
             center_sub_second: DVec2::ZERO,
@@ -1042,7 +1045,15 @@ fn load_xml(src_buf: &Vec<u8>) -> ImageInfo
 
     if let Ok(Some(src_xml)) = src_base_text
     {
-        ret.bytes_base_text = Some(src_xml);
+        let template = svgclock_rs::minitemplate::parse( Cursor::new(&src_xml) );
+
+        if let Ok( template ) = template {
+            ret.template_base_text = Some( template );
+        }
+        else {
+            let err = template.unwrap_err();
+            error!( "base_text : {}", err );
+        }
     }
 
     if let Ok(Some(src_xml)) = src_long_handle
@@ -1756,46 +1767,35 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
     };
 
     if (with_text_time_zone || with_text_date || with_text_time || with_text_segment)
-        && let Some(x) = image_info.bytes_base_text.as_ref()
+        && let Some( template) = image_info.template_base_text.as_ref()
     {
-        // text replace
-        static RE_REPLACE: LazyLock<regex::bytes::Regex> = LazyLock::new(|| {
-            regex::bytes::Regex::new(r"(?i)\{\{\s*([A-Za-z0-9_]+)\s*\}\}").unwrap()
+        static RE_SEGMENT_NUM: LazyLock<regex::Regex> = LazyLock::new(|| {
+            regex::Regex::new(r"(?i)seg_(hh|hl|mh|ml|sh|sl)([a-g])").unwrap()
         });
 
-        static RE_SEGMENT_NUM: LazyLock<regex::bytes::Regex> = LazyLock::new(|| {
-            regex::bytes::Regex::new(r"(?i)seg_(hh|hl|mh|ml|sh|sl)([a-g])").unwrap()
-        });
+        static RE_SEGMENT_AMPM: LazyLock<regex::Regex> =
+            LazyLock::new(|| regex::Regex::new(r"(?i)seg_(amb|pmb|am|pm)").unwrap());
 
-        static RE_SEGMENT_AMPM: LazyLock<regex::bytes::Regex> =
-            LazyLock::new(|| regex::bytes::Regex::new(r"(?i)seg_(amb|pmb|am|pm)").unwrap());
+        static RE_SEGMENT_DOT: LazyLock<regex::Regex> =
+            LazyLock::new(|| regex::Regex::new(r"(?i)seg_dot").unwrap());
 
-        static RE_SEGMENT_DOT: LazyLock<regex::bytes::Regex> =
-            LazyLock::new(|| regex::bytes::Regex::new(r"(?i)seg_dot").unwrap());
+        let mut ctx = svgclock_rs::minitemplate::Context::new();
 
-        let mut buf: Vec<u8> = Vec::new();
-        let mut last_match = 0;
+        ctx.opt = VarOpt::RAW;
 
-        for caps in RE_REPLACE.captures_iter(x)
-        {
-            let m0 = caps.get(0).unwrap();
-            let m1 = caps.get(1).unwrap();
+        for kw in template.get_varnames() {
 
-            buf.extend_from_slice(&x[last_match .. m0.start()]);
-
-            let kw = m1.as_bytes().to_ascii_lowercase();
-
-            match kw.as_slice()
+            match kw.as_str()
             {
                 /* https://docs.rs/chrono/latest/chrono/format/strftime/index.html */
-                b"time_zone" =>
+                "time_zone" =>
                 {
                     if with_text_time_zone && app_info.enable_text_time_zone
                     {
-                        buf.extend_from_slice(app_info.time_zone.as_bytes());
+                        ctx.set( &kw, app_info.time_zone.clone() );
                     }
                 },
-                b"date" =>
+                "date" =>
                 {
                     if with_text_date && app_info.enable_text_date
                     {
@@ -1810,22 +1810,21 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
 
                             if let Ok(_) = df.write_to(&mut buffer)
                             {
-                                buf.extend_from_slice(buffer.as_bytes());
+                                ctx.set( &kw, buffer );
                             }
                         }
                         else
                         {
-                            buf.extend_from_slice(
+                            ctx.set( &kw,
                                 app_info
                                     .time_disp
                                     .format(app_info.text_format_date.format_str().0)
                                     .to_string()
-                                    .as_bytes(),
                             );
                         }
                     }
                 },
-                b"time" =>
+                "time" =>
                 {
                     if with_text_time && app_info.enable_text_time
                     {
@@ -1840,17 +1839,16 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
 
                             if let Ok(_) = df.write_to(&mut buffer)
                             {
-                                buf.extend_from_slice(buffer.as_bytes());
+                                ctx.set( &kw, buffer );
                             }
                         }
                         else
                         {
-                            buf.extend_from_slice(
+                            ctx.set( &kw,
                                 app_info
                                     .time_disp
                                     .format(app_info.text_format_time.format_str().0)
                                     .to_string()
-                                    .as_bytes(),
                             );
                         }
                     }
@@ -1859,7 +1857,7 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
                 {
                     if with_text_segment && app_info.enable_text_time_segment
                     {
-                        if let Some(caps) = RE_SEGMENT_NUM.captures(kw.as_slice())
+                        if let Some(caps) = RE_SEGMENT_NUM.captures(&kw )
                         {
                             /*
                                 <g visibility="{{seg_(hh|hl|mh|ml|sh|sl)([a-g])}}"></g>
@@ -1890,9 +1888,9 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
 
                             let flag_12 = app_info.enable_text_time_segment_hour12;
 
-                            let num = match m1.as_bytes()
+                            let num = match m1.as_str()
                             {
-                                b"hh" =>
+                                "hh" =>
                                 {
                                     (if flag_12
                                     {
@@ -1903,7 +1901,7 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
                                         app_info.time_disp.hour()
                                     }) / 10
                                 },
-                                b"hl" =>
+                                "hl" =>
                                 {
                                     (if flag_12
                                     {
@@ -1914,10 +1912,10 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
                                         app_info.time_disp.hour()
                                     }) % 10
                                 },
-                                b"mh" => app_info.time_disp.minute() / 10,
-                                b"ml" => app_info.time_disp.minute() % 10,
-                                b"sh" => app_info.time_disp.second() / 10,
-                                b"sl" => app_info.time_disp.second() % 10,
+                                "mh" => app_info.time_disp.minute() / 10,
+                                "ml" => app_info.time_disp.minute() % 10,
+                                "sh" => app_info.time_disp.second() / 10,
+                                "sl" => app_info.time_disp.second() % 10,
                                 _ => 0,
                             };
 
@@ -1939,26 +1937,26 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
                                 _ => 0x00,
                             };
 
-                            let b_mask: u8 = match m2.as_bytes()
+                            let b_mask: u8 = match m2.as_str()
                             {
-                                b"a" => 0x1 << 6,
-                                b"b" => 0x1 << 5,
-                                b"c" => 0x1 << 4,
-                                b"d" => 0x1 << 3,
-                                b"e" => 0x1 << 2,
-                                b"f" => 0x1 << 1,
-                                b"g" => 0x1 << 0,
+                                "a" => 0x1 << 6,
+                                "b" => 0x1 << 5,
+                                "c" => 0x1 << 4,
+                                "d" => 0x1 << 3,
+                                "e" => 0x1 << 2,
+                                "f" => 0x1 << 1,
+                                "g" => 0x1 << 0,
                                 _ => 0x0u8,
                             };
 
-                            buf.extend_from_slice(
+                            ctx.set( &kw,
                                 if b_on & b_mask != 0x00
                                 {
-                                    b"visible"
+                                    "visible"
                                 }
                                 else
                                 {
-                                    b"hidden"
+                                    "hidden"
                                 },
                             );
 
@@ -1974,7 +1972,7 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
                             }
                             */
                         }
-                        else if let Some(caps) = RE_SEGMENT_AMPM.captures(kw.as_slice())
+                        else if let Some(caps) = RE_SEGMENT_AMPM.captures(&kw)
                         {
                             /*
                                 <g visibility="{{seg_am}}"></g>
@@ -1987,26 +1985,26 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
                             let is_enable = app_info.enable_text_time_segment_hour12;
                             let is_pm = app_info.time_disp.hour() >= 12;
 
-                            let m1 = caps.get(1).unwrap();
+                            let m1 = caps.get(1).unwrap().as_str();
 
                             // debug!("{:?}", String::from_utf8( m1.as_bytes().to_vec() ) );
 
-                            buf.extend_from_slice(
+                            ctx.set( &kw,
                                 if is_enable
-                                    && (!is_pm && m1.as_bytes() == b"am"
-                                        || is_pm && m1.as_bytes() == b"pm"
-                                        || m1.as_bytes() == b"amb"
-                                        || m1.as_bytes() == b"pmb")
+                                    && (!is_pm && m1 == "am"
+                                        || is_pm && m1 == "pm"
+                                        || m1 == "amb"
+                                        || m1 == "pmb")
                                 {
-                                    b"visible"
+                                    "visible"
                                 }
                                 else
                                 {
-                                    b"hidden"
+                                    "hidden"
                                 },
                             );
                         }
-                        else if let Some(_) = RE_SEGMENT_DOT.captures(kw.as_slice())
+                        else if let Some(_) = RE_SEGMENT_DOT.captures(&kw)
                         {
                             /*
                                 <g visibility="{{seg_dot}}"></g>
@@ -2023,19 +2021,18 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
                                 true
                             };
 
-                            buf.extend_from_slice(if is_on { b"visible" } else { b"hidden" });
+                            ctx.set( &kw,if is_on { "visible" } else { "hidden" } );
                         }
                     }
                 },
             }
-
-            last_match = m0.end();
         }
 
-        buf.extend_from_slice(&x[last_match ..]);
+        let mut cursor = Cursor::new(Vec::new());
+        let _ = template.write_to( &mut ctx, &mut cursor);
 
         // render
-        let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(&buf));
+        let svg_stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from( cursor.into_inner().as_slice() ) );
 
         if let Ok(svgh) = rsvg::Loader::new().read_stream(
             &svg_stream,
