@@ -45,6 +45,8 @@ use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, TimeDelta, Timelike, Utc
 
 use linked_hash_map::LinkedHashMap;
 
+mod minitemplate;
+
 const ENV_KEY_THEME_CUSTOM: &str = "THEME_CUSTOM";
 const ENV_KEY_FIX_TIME: &str = "FIX_TIME";
 
