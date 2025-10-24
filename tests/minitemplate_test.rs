@@ -17,7 +17,7 @@ mod minitemplate_tests {
             |Last line.
             ";
 
-        let trimmed_text = trim_margin(raw_text, "|");
+        let trimmed_text = trim_margin(raw_text, None );
 
         assert_eq!(trimmed_text, "This line is indented.\n   Whitespace within indentation is preserved.\nLast line.\n");
     }
@@ -51,7 +51,7 @@ mod minitemplate_tests {
             |CCCCC
             |D {{ var }} D
             |EEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         let mut c = Context::new();
@@ -64,7 +64,7 @@ mod minitemplate_tests {
             |CCCCC
             |D ???var??? D
             |EEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.set("var", "DDD" );
 
@@ -76,7 +76,7 @@ mod minitemplate_tests {
             |CCCCC
             |D DDD D
             |EEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.set( "var", "D< >D");
 
@@ -88,7 +88,7 @@ mod minitemplate_tests {
             |CCCCC
             |D D&lt;&nbsp;&gt;D D
             |EEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
     }
 
@@ -105,7 +105,7 @@ mod minitemplate_tests {
             |CC {{ var2 }} CC
             |{% end %}
             |DDDDDD
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         assert_eq!(
@@ -116,7 +116,7 @@ mod minitemplate_tests {
             |CC ???var2??? CC
             |
             |DDDDDD
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.is_def_blank = true;
 
@@ -128,7 +128,7 @@ mod minitemplate_tests {
             |CC  CC
             |
             |DDDDDD
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.set( "var2", "cc" );
 
@@ -140,7 +140,7 @@ mod minitemplate_tests {
             |CC cc CC
             |
             |DDDDDD
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.set( "cond", true );
         c.set( "var1", "bb" );
@@ -153,7 +153,7 @@ mod minitemplate_tests {
             |BB bb BB
             |
             |DDDDDD
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
     }
 
@@ -176,7 +176,7 @@ mod minitemplate_tests {
             |DD {{ var1e }} DD
             |{% end %}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         assert_eq!(
@@ -189,7 +189,7 @@ mod minitemplate_tests {
             |DD ???var1e??? DD
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.set( "cond1", true );
 
@@ -201,7 +201,7 @@ mod minitemplate_tests {
             |
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.set( "cond2", true );
 
@@ -215,7 +215,7 @@ mod minitemplate_tests {
             |
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
     }
 
@@ -230,7 +230,7 @@ mod minitemplate_tests {
             |BB {{ var.var1 }} BB {{ var.var2 }} BB
             |{% end %}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         assert_eq!(
@@ -239,7 +239,7 @@ mod minitemplate_tests {
             |AAAAAA
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         let mut vec: VecValue = Vec::new();
 
@@ -272,7 +272,7 @@ mod minitemplate_tests {
             |BB V1_2 BB V2_2 BB
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
     }
 
@@ -289,7 +289,7 @@ mod minitemplate_tests {
             |{% end %}
             |{% end %}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         c.set( "vars", make_vec_value( &[
@@ -305,7 +305,7 @@ mod minitemplate_tests {
             |AAAAAA
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.set( "cond", "true" );
 
@@ -325,7 +325,7 @@ mod minitemplate_tests {
             |
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
     }
 
@@ -344,7 +344,7 @@ mod minitemplate_tests {
             |{% end %}
             |{% end %}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         assert_eq!(
@@ -353,7 +353,7 @@ mod minitemplate_tests {
             |AAAAAA
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.set( "cond", true );
 
@@ -365,7 +365,7 @@ mod minitemplate_tests {
             |
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
         c.set( "vars_y",  make_vec_value( &[ 1.into(), 2.into() ] ) );
         c.set( "vars_x",  make_vec_value( &[ 3.into(), 4.into() ] ) );
@@ -390,7 +390,7 @@ mod minitemplate_tests {
                 |
                 |
                 |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
 
     }
 
@@ -402,7 +402,7 @@ mod minitemplate_tests {
             |AAAAAA
             |{% if cond  }}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         );
 
         assert!( t.is_err() );
@@ -417,7 +417,7 @@ mod minitemplate_tests {
             |AAAAAA
             |{% if cond %}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         );
 
         assert!( t.is_err() );
@@ -433,7 +433,7 @@ mod minitemplate_tests {
             |{% if cond %}
             |{% if cond %}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         );
 
         assert!( t.is_err() );
@@ -448,7 +448,7 @@ mod minitemplate_tests {
             |AAAAAA
             |{% if cond
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         );
 
         assert!( t.is_err() );
@@ -464,7 +464,7 @@ mod minitemplate_tests {
             |{#
             |{% if cond
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         );
 
         assert!( t.is_err() );
@@ -482,7 +482,7 @@ mod minitemplate_tests {
             |BB {{ var.var1 }} BB {{ var.var2 }} BB
             |#}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         assert_eq!(
@@ -491,7 +491,7 @@ mod minitemplate_tests {
             |AAAAAA
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
     }
 
     #[test]
@@ -508,7 +508,7 @@ mod minitemplate_tests {
             |#}
             |#}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         assert_eq!(
@@ -517,7 +517,7 @@ mod minitemplate_tests {
             |AAAAAA
             |
             |EEEEEE
-            ", "|").as_str(), t.render( &mut c ) );
+            ", None ).as_str(), t.render( &mut c ) );
     }
 
     #[test]
@@ -532,7 +532,7 @@ mod minitemplate_tests {
             |CCCCC
             |#}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         );
 
         assert!( t.is_err() );
@@ -555,7 +555,7 @@ mod minitemplate_tests {
             |
             |#}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         );
 
         assert!( t.is_err() );
@@ -577,7 +577,7 @@ mod minitemplate_tests {
             |{% end %}
             |{{ var6 }}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         assert_eq!( t.get_varnames(), [ "var1", "var2", "var3", "var4", "var5", "var6" ].into_iter().map( String::from ).collect::<HashSet<String> >() );
@@ -595,7 +595,7 @@ mod minitemplate_tests {
             |#}
             |{{ var4 }}
             |EEEEEE
-            ", "|").as_str()
+            ", None ).as_str()
         ).unwrap();
 
         assert_eq!( t.get_varnames(), [ "var4" ].into_iter().map( String::from ).collect::<HashSet<String> >() );

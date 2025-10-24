@@ -126,7 +126,7 @@ pub trait ContextTrait {
     fn get_item(&self, key: &str) -> Option< Rc< ContextValue > >;
     fn get_bool(&self, key: &str) -> bool;
     fn get_str(&self, key: &str, opt: &VarOpt) -> String;
-    fn get_iter(&self, key: &str) -> Option< Vec< Rc< ContextValue > > >;
+    fn get_vec(&self, key: &str) -> Option< Vec< Rc< ContextValue > > >;
 
     fn push(&mut self, name: &str, item: &Rc< ContextValue > );
     fn pop(&mut self);
@@ -214,7 +214,7 @@ impl WriteTo for Part {
                 .write_to(ctx, out)?;
             }
             Part::LoopBlock(part) => {
-                let item = ctx.get_iter(&part.key);
+                let item = ctx.get_vec(&part.key);
 
                 if let Some(vec) = item {
                     for x in vec {
@@ -768,9 +768,6 @@ impl Context {
     }
 }
 
-pub trait ContextAny: ContextTrait + Any {}
-impl<T: ContextTrait + Any> ContextAny for T {}
-
 impl ContextTrait for Context {
 
     fn put_item(&mut self, key: &str, val: ContextValue ) -> Option< Rc< ContextValue > > {
@@ -883,7 +880,7 @@ impl ContextTrait for Context {
         escape_str(ret, opt)
     }
 
-    fn get_iter(&self, key: &str) -> Option< Vec< Rc< ContextValue > > > {
+    fn get_vec(&self, key: &str) -> Option< Vec< Rc< ContextValue > > > {
         let item = self.get_item(key);
 
         if let Some(item) = item {
@@ -1076,7 +1073,9 @@ pub fn make_map_value( slice: &[ (&str, ContextValue ) ] ) -> MapValue {
         .collect()
 }
 
-pub fn trim_margin(text: &str, margin_prefix: &str) -> String {
+pub fn trim_margin(text: &str, margin_prefix: Option< &str >) -> String {
+    let margin_prefix= margin_prefix.unwrap_or( "|" );
+
     text.lines()
         .map(|line| {
             let trimmed = line.trim_start();
