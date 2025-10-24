@@ -31,12 +31,12 @@ pub fn any_to_str(item: &dyn Any) -> String {
 }
 */
 
-pub fn escape_str(item: String, opt: &VarOpt) -> String {
+pub fn escape_str(item: &str, opt: &VarOpt) -> String {
     static R: LazyLock<Regex> = LazyLock::new(|| Regex::new("[<>&'\" ]").unwrap());
 
     match opt {
         VarOpt::HTML | VarOpt::XML => {
-            let escaped = R.replace_all(&item, |caps: &regex::Captures| {
+            let escaped = R.replace_all(item, |caps: &regex::Captures| {
                 match caps.get(0).unwrap().as_str() {
                     "&" => "&amp;",
                     "<" => "&lt;",
@@ -59,7 +59,7 @@ pub fn escape_str(item: String, opt: &VarOpt) -> String {
 
             escaped.into_owned()
         }
-        _ => item,
+        _ => item.to_string(),
     }
 }
 
@@ -196,6 +196,7 @@ impl WriteTo for Block {
         Ok(())
     }
 }
+
 impl WriteTo for Part {
     fn write_to<W: Write>(&self, ctx: &mut dyn ContextTrait, out: &mut W) -> io::Result<()> {
         match self {
@@ -877,7 +878,7 @@ impl ContextTrait for Context {
 
         let opt = if *opt == VarOpt::DEF { &self.opt } else { opt };
 
-        escape_str(ret, opt)
+        escape_str(&ret, opt)
     }
 
     fn get_vec(&self, key: &str) -> Option< Vec< Rc< ContextValue > > > {
