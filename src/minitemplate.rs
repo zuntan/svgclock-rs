@@ -1,6 +1,5 @@
 use regex::Regex;
 use std::fmt;
-use std::any::Any;
 use std::collections::{HashSet, HashMap};
 use std::io::Cursor;
 use std::io::prelude::*;
@@ -250,29 +249,29 @@ impl Template {
 
     pub fn render(&self, ctx: &mut dyn ContextTrait) -> String {
         let mut cursor = Cursor::new(Vec::new());
-        self.write_to(ctx, &mut cursor);
+        let _ = self.write_to(ctx, &mut cursor);
         String::from_utf8(cursor.into_inner()).unwrap()
     }
 
-    pub fn get_varnames(&self) -> HashSet< String > {
+    pub fn get_var_names(&self) -> HashSet< String > {
 
-        fn get_varnames_from_block( v: &mut HashSet< String >, b : &Block ) {
+        fn get_var_names_from_block( v: &mut HashSet< String >, b : &Block ) {
 
             for part in b.parts.iter() {
                 match part {
-                    Part::Str(part) => {
+                    Part::Str(_) => {
                     }
                     Part::Var(part) => {
                         v.insert( part.key.to_string() );
                     }
                     Part::CondBlock(part) => {
                         v.insert( part.key.to_string() );
-                        get_varnames_from_block(v, &part.pos);
-                        get_varnames_from_block(v, &part.neg);
+                        get_var_names_from_block(v, &part.pos);
+                        get_var_names_from_block(v, &part.neg);
                     }
                     Part::LoopBlock(part) => {
                         v.insert( part.key.to_string() );
-                        get_varnames_from_block(v, &part.inner);
+                        get_var_names_from_block(v, &part.inner);
                     }
                 }
             }
@@ -280,7 +279,7 @@ impl Template {
 
         let mut v: HashSet< String > = HashSet::new();
 
-        get_varnames_from_block( &mut v, &self.block );
+        get_var_names_from_block( &mut v, &self.block );
 
         v
     }
@@ -315,6 +314,8 @@ impl fmt::Display for ParserError {
     }
 }
 
+
+#[allow(unused_assignments)]
 pub fn parse<R: Read>(source: R) -> Result<Template, ParserError> {
     enum StackBlockType {
         Block,

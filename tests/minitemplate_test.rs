@@ -1,7 +1,6 @@
 mod minitemplate_tests {
 
     use svgclock_rs::minitemplate::*;
-    use std::rc::Rc;
     use std::collections::HashSet;
 
     #[test]
@@ -580,7 +579,7 @@ mod minitemplate_tests {
             ", None ).as_str()
         ).unwrap();
 
-        assert_eq!( t.get_varnames(), [ "var1", "var2", "var3", "var4", "var5", "var6" ].into_iter().map( String::from ).collect::<HashSet<String> >() );
+        assert_eq!( t.get_var_names(), [ "var1", "var2", "var3", "var4", "var5", "var6" ].into_iter().map( String::from ).collect::<HashSet<String> >() );
 
         let t = parse_str(
             trim_margin(
@@ -598,7 +597,7 @@ mod minitemplate_tests {
             ", None ).as_str()
         ).unwrap();
 
-        assert_eq!( t.get_varnames(), [ "var4" ].into_iter().map( String::from ).collect::<HashSet<String> >() );
+        assert_eq!( t.get_var_names(), [ "var4" ].into_iter().map( String::from ).collect::<HashSet<String> >() );
 
     }
 

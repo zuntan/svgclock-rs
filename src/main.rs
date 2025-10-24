@@ -1783,7 +1783,7 @@ fn draw_watch(cctx: &Context, image_info: &ImageInfo, app_info: &AppInfo, for_re
 
         ctx.opt = VarOpt::RAW;
 
-        for kw in template.get_varnames() {
+        for kw in template.get_var_names() {
 
             match kw.as_str()
             {
